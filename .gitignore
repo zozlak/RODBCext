@@ -1,0 +1,10 @@
+RODBC.Rproj
+src/*.o
+src/*.so
+src/Makevars
+src/config.h
+build/*
+.Rproj.user
+.Rhistory
+config.log
+config.status
