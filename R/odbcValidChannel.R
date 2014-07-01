@@ -16,6 +16,9 @@
 
 odbcValidChannel <- function(channel)
 {
-  inherits(channel, "RODBC") && is.integer(channel) &&
+  return(
+    inherits(channel, "RODBC") && 
+    is.integer(channel) &&
     .Call("RODBCcheckchannel", channel, attr(channel, "id")) > 0
+  )
 }

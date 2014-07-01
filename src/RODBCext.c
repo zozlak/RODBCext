@@ -68,17 +68,19 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
     switch(TYPEOF(VECTOR_ELT(data, col))) { 
       case REALSXP:
         column->RData[0] = REAL(VECTOR_ELT(data, col))[row];
-        if(ISNAN(column->IData[0]))
+        if(ISNAN(column->IData[0])){
           column->IndPtr[0] = SQL_NULL_DATA;
-        else
+        }else{
           column->IndPtr[0] = SQL_NTS;
+        }
         break;
       case INTSXP:
         column->IData[0] = INTEGER(VECTOR_ELT(data, col))[row];
-        if(column->IData[0] == NA_INTEGER)
+        if(column->IData[0] == NA_INTEGER){
           column->IndPtr[0] = SQL_NULL_DATA;
-        else
+        }else{
           column->IndPtr[0] = SQL_NTS;
+        }
         break;
       default:
         cData = translateChar(STRING_ELT(VECTOR_ELT(data, col), row));
@@ -88,10 +90,11 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
           warning(_("character data '%s' truncated to %d bytes in parameter %d"),
             cData, column->ColSize, col + 1);
         }
-        if(STRING_ELT(VECTOR_ELT(data, col), row) == NA_STRING)
+        if(STRING_ELT(VECTOR_ELT(data, col), row) == NA_STRING){
             column->IndPtr[0] = SQL_NULL_DATA;
-        else
+        }else{
             column->IndPtr[0] = SQL_NTS;
+        }
         break;
     }
   }
@@ -142,18 +145,34 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
 
     res = SQLDescribeParam(thisHandle->hStmt, col + 1, &column->DataType, 
           &column->ColSize, &column->DecimalDigits, &column->Nullable);
-    SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLDescribeParam failed"), res);
-          
+    /* ODBC driver does not support SQLDescribeParam - try to use default values and rely on the ODBC casting */
+    if(res != SQL_SUCCESS && res != SQL_SUCCESS_WITH_INFO){
+      switch(TYPEOF(VECTOR_ELT(data, col))) {
+        case REALSXP:
+          column->DataType = SQL_DOUBLE;
+          column->ColSize = DOUBLE_COL_SIZE;
+          break;
+        case INTSXP:
+          column->DataType = SQL_INTEGER;
+          break;
+        default:
+          column->DataType = SQL_VARCHAR;
+          column->ColSize = COLMAX;
+          break;
+      }
+    }
+
+    /* Bind parameter */
     switch(TYPEOF(VECTOR_ELT(data, col))) {
       case REALSXP:
         res = SQLBindParameter(
           thisHandle->hStmt,
           col + 1, SQL_PARAM_INPUT, SQL_C_DOUBLE,
-          column->DataType,
+          column->DataType, 
           column->ColSize,
           column->DecimalDigits,
-          column->RData,
-          0,
+          column->RData,  
+          0,              
           column->IndPtr
         );
         break;
@@ -189,6 +208,42 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
     SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLBindParameter failed"), res);
   }
   return 1;
+}
+
+/**
+ * Check if query was executed
+ * 
+ * @param chan R ODBC handle
+ * @retval 0 if query not executed, 1 if query executed, -1 on error
+ */
+SEXP RODBCQueryStatus(SEXP chan){
+  pRODBCHandle thisHandle = R_ExternalPtrAddr(chan);
+  SQLRETURN res = 0;
+  SQLINTEGER len;
+  SQLCHAR sqlState[6];
+  SQLINTEGER nativeError;
+  SQLSMALLINT msgLen;
+
+  res = SQLGetStmtAttr(thisHandle->hStmt, SQL_ATTR_ROW_NUMBER, NULL, 0, &len);
+  if(res != SQL_SUCCESS && res != SQL_SUCCESS_WITH_INFO){
+    /* get the error code */
+    res = SQLGetDiagRec(SQL_HANDLE_STMT, thisHandle->hStmt, 1, sqlState, &nativeError, NULL, 0, &msgLen);
+    if(res != SQL_SUCCESS && res != SQL_SUCCESS_WITH_INFO){
+      return ScalarInteger(-1);
+    }
+    /* check if it is an INVALID CURSOR STATE error */
+    if(strncmp((const char *)sqlState, "24000", 5) == 0){
+      return ScalarInteger(0);
+    }
+    /* check if it is an NOT POSITIONED ON A VALID ROW error */
+    if(strncmp((const char *)sqlState, "07005", 5) == 0){
+      return ScalarInteger(1);
+    }
+    warning(_("SQL error code: %s"), sqlState);
+    return ScalarInteger(-1);
+  }
+
+  return ScalarInteger(1);
 }
 
 /**
@@ -277,6 +332,7 @@ SEXP RODBCExecute(SEXP chan, SEXP data, SEXP nrows)
 #include <R_ext/Rdynload.h>
 
 static const R_CallMethodDef CallEntries[] = {
+    {"RODBCQueryStatus", (DL_FUNC) &RODBCQueryStatus, 1},
     {"RODBCPrepare", (DL_FUNC) &RODBCPrepare, 2},
     {"RODBCExecute", (DL_FUNC) &RODBCExecute, 3},
     {"RODBCcheckchannel", (DL_FUNC) &RODBCcheckchannel, 2},

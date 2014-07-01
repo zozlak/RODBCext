@@ -16,25 +16,27 @@
 #' @title Executes an already prepared query
 #' @useDynLib RODBCext
 #' @description
-#' Executes an already prepared query. You may prepare query using \link{sqlPrepare}.
+#' Executes a parameterized query. 
 #' 
-#' Optionally fetches results using \link{sqlFetch}.
+#' Optionally (fetch=TRUE) fetches results using \link[RODBC]{sqlFetchMore}.
+#' 
+#' Optionally (query=NULL) uses query already prepared by \link{sqlPrepare}.
 #' @details
 #' Return value depends on the combination of parameters:
 #' \itemize{
-#'   \item if there were errors during query execution (or fetching results)
+#'   \item if there were errors during query preparation or execution or fetching results
 #'     return value depends on errors parameter - if errors=TRUE error is thrown,
 #'     otherwise -1 will be returned
-#'   \item if fetch=FALSE and there were no errors during query execution, invisible(1) will be returned
-#'   \item if fetch=TRUE and there were no errors during query execution and fetching results, 
-#'     data.frame with results will be returned
+#'   \item if fetch=FALSE and there were no errors invisible(1) will be returned
+#'   \item if fetch=TRUE and there were no errors a data.frame with results will be returned
 #' }
-#' @param channel ODBC connection obtained by odbcConnect()
+#' @param channel ODBC connection obtained by \link[RODBC]{odbcConnect}
+#' @param query a query string (NULL if query already prepared using \link{sqlPrepare})
 #' @param data data to pass to sqlExecute (as data.frame)
 #' @param fetch whether to automatically fetch results (if data provided)
 #' @param errors whether to display errors
-#' @param rows_at_time number of rows to fetch at one time - see details of \link{sqlQuery}
-#' @param ... parameters to pass to \link{sqlFetchMore} (if fetch=TRUE)
+#' @param rows_at_time number of rows to fetch at one time - see details of \link[RODBC]{sqlQuery}
+#' @param ... parameters to pass to \link[RODBC]{sqlFetchMore} (if fetch=TRUE)
 #' @return see datails
 #' @export
 #' @examples
@@ -43,50 +45,111 @@
 #'   
 #'   # prepare, execute and fetch results separatly
 #'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
-#'   sqlExecute(conn, 'myValue')
+#'   sqlExecute(conn, NULL, 'myValue')
 #'   sqlFetch(conn)
 #'   
 #'   # prepare and execute at one time, fetch results separately
-#'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue')
+#'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue')
 #'   sqlFetchMore(conn)
 #'   
 #'   # prepare, execute and fetch at one time
-#'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
+#'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
 #'   
 #'   # prepare, execute and fetch at one time, pass additional parameters to sqlFetch()
-#'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, stringsAsFactors=FALSE)
+#'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, stringsAsFactors=FALSE)
 #' }
-sqlExecute <- function(channel, data=NULL, fetch=FALSE, errors = TRUE, rows_at_time = attr(channel, "rows_at_time"), ...)
+sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE, rows_at_time=attr(channel, "rows_at_time"), ...)
 {
-  if(!odbcValidChannel(channel))
+  if(!odbcValidChannel(channel)){
     stop("first argument is not an open RODBC channel")
-  if(is.null(data)){
-    data = data.frame()
   }
+  
+  # Prepare query (if proveded)
+  if(!is.null(query)){
+    stat <- sqlPrepare(channel, query, errors)
+    if(stat == -1L){
+      return(stat); # there is no need to check if error should be thrown - this is being done by sqlPrepare()
+    }
+  }
+  
+  # Prepare data
   data = as.data.frame(data)
   for(k in seq_along(data)){
     if(is.factor(data[, k])){
       data[, k] = levels(data[, k])[data[, k]]
     }
   }
-  stat <- .Call(
-    "RODBCExecute", 
-    attr(channel, "handle_ptr"), 
-    data, 
-    as.integer(rows_at_time)
-  )
-  if(stat == -1L) {
-    if(errors) stop(paste0(odbcGetErrMsg(channel), collapse='\n'))
-    else return(stat)
+  
+  # If there is no need to fetch results or no query parameters were provided,
+  # call RODBCExecute once on whole data
+  if(fetch == FALSE | nrow(data) < 1){
+    stat <- .Call(
+      "RODBCExecute", 
+      attr(channel, "handle_ptr"), 
+      data, 
+      as.integer(rows_at_time)
+    )
+    if(stat == -1L) {
+      if(errors){
+        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
+      }
+      else{
+        return(stat)
+      }
+    }
+    
+    if(fetch == FALSE){
+      return(invisible(stat))
+    }
+    
+    # Fetch results
+    stat = RODBC::sqlFetchMore(channel, ...)
+    if(!is.data.frame(stat)) {
+      if(errors){
+        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
+      }
+      else{
+        return(stat)
+      }
+    }
+    return(stat)
   }
   
-  if(fetch == FALSE){
-    return(invisible(stat))    
+  # If results should be fetched and query parameters were provided
+
+  # For each row of query parameters execute the query and fetch results
+  results = NULL
+  for(row in 1:nrow(data)){
+    stat <- .Call(
+      "RODBCExecute", 
+      attr(channel, "handle_ptr"), 
+      as.list(data[row, ]), 
+      as.integer(rows_at_time)
+    )
+    if(stat == -1L) {
+      if(errors){
+        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
+      }
+      else{
+        return(stat)
+      }
+    }      
+    
+    stat <- RODBC::sqlFetchMore(channel, ...)
+    if(!is.data.frame(stat)) {
+      if(errors){
+        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
+      }
+      else{
+        return(stat)
+      }
+    }
+    
+    if(is.null(results)){
+      results <- stat
+    }else{
+      results <- rbind(results, stat)
+    }
   }
-  stat <- sqlFetchMore(channel, ...)
-  if(!is.data.frame(stat)) {
-    if(errors) stop(paste0(odbcGetErrMsg(channel), collapse='\n'))
-    else return(stat)
-  }
-  return(stat)
+  return(results)
 }
