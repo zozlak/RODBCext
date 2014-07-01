@@ -1,14 +1,20 @@
 --------------------
 Changes in RODBCext 0.2 (2014-07-01)
 
-- Added support for drivers which don't provide SQLDescribeParam()
-  (through setting up some default data types and relying on the automatic ODBC types conversion)
+- Changes in API - ability to prepare and execute query in one call moved from 
+  sqlPrepare() to sqlExec():
+  - sqlPrepare() now takes only odbcHandler, queryString and errors arguments
+  - sqlExec() now takes additional queryString=NA argument
+
+- Added support for drivers which don't provide SQLDescribeParam() ODBC call
+  (by using data types from data passed to sqlExecute())
 
 - sqlExec() now merges results of all queries if nrows(data) > 1 and fetch=TRUE
 
-- Ability to prepare and execute query in one call moved from sqlPrepare() to sqlExec():
-  - sqlPrepare() now takes only odbcHandler and queryString arguments
-  - sqlExec() given an additional queryString=NA argument
+- Added functions sqlFetchMore() and odbcFetchRows() which avoid calls to 
+  RODBC::sqlFetchMore() and RODBC::odbcFetchRows() when connection handle is 
+  in a "query prepared but not executed" state (which caused R crashes)
 
-- Covering functions for those RODBC functions which can't cope with the state of RODBC connection handle after call to sqlPrepare().
-  This functions call original RODBC ones after ensuring a right state of a connection handle.
+- Switch from RODBC::sqlFetchMore() to RODBC::sqlGetResults() for fetching 
+  results (now we don't care about queries which do not produce any results
+  like UPDATE, DELETE, CREATE, etc. queries)

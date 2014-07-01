@@ -18,7 +18,7 @@
 #' @description
 #' Executes a parameterized query. 
 #' 
-#' Optionally (fetch=TRUE) fetches results using \link[RODBC]{sqlFetchMore}.
+#' Optionally (fetch=TRUE) fetches results using \link[RODBC]{sqlGetResults}.
 #' 
 #' Optionally (query=NULL) uses query already prepared by \link{sqlPrepare}.
 #' @details
@@ -36,7 +36,7 @@
 #' @param fetch whether to automatically fetch results (if data provided)
 #' @param errors whether to display errors
 #' @param rows_at_time number of rows to fetch at one time - see details of \link[RODBC]{sqlQuery}
-#' @param ... parameters to pass to \link[RODBC]{sqlFetchMore} (if fetch=TRUE)
+#' @param ... parameters to pass to \link[RODBC]{sqlGetResults} (if fetch=TRUE)
 #' @return see datails
 #' @export
 #' @examples
@@ -46,11 +46,11 @@
 #'   # prepare, execute and fetch results separatly
 #'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
 #'   sqlExecute(conn, NULL, 'myValue')
-#'   sqlFetch(conn)
+#'   sqlGetResults(conn)
 #'   
 #'   # prepare and execute at one time, fetch results separately
 #'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue')
-#'   sqlFetchMore(conn)
+#'   sqlGetResults(conn)
 #'   
 #'   # prepare, execute and fetch at one time
 #'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
@@ -106,16 +106,7 @@ sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE,
     }
     
     # Fetch results
-    stat = RODBC::sqlFetchMore(channel, ...)
-    if(!is.data.frame(stat)) {
-      if(errors){
-        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
-      }
-      else{
-        return(stat)
-      }
-    }
-    return(stat)
+    return(RODBC::sqlGetResults(channel, errors=errors, ...))
   }
   
   # If results should be fetched and query parameters were provided
@@ -138,20 +129,12 @@ sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE,
       }
     }      
     
-    stat <- RODBC::sqlFetchMore(channel, ...)
-    if(!is.data.frame(stat)) {
-      if(errors){
-        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
-      }
-      else{
-        return(stat)
-      }
-    }
+    stat <- RODBC::sqlGetResults(channel, errors=errors, ...)
     
     if(is.null(results)){
-      results <- stat
+      results <- as.data.frame(stat)
     }else{
-      results <- rbind(results, stat)
+      results <- rbind(results, as.data.frame(stat))
     }
   }
   return(results)
