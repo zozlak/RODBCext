@@ -3,61 +3,28 @@
 \alias{sqlPrepare}
 \title{Prepares a query for execution}
 \usage{
-sqlPrepare(channel, query, data = NULL, fetch = FALSE, errors = TRUE, ...)
+sqlPrepare(channel, query, errors = TRUE)
 }
 \arguments{
-\item{channel}{ODBC connection obtained by odbcConnect()}
+\item{channel}{ODBC connection obtained by \link{odbcConnect}}
 
 \item{query}{query string}
 
-\item{data}{data to pass to sqlExecute (as data.frame)}
-
-\item{fetch}{whether to automatically fetch results (if data provided)}
-
 \item{errors}{whether to display errors}
-
-\item{...}{parameters to pass to \link{sqlFetchMore} (if data provided and fetch=TRUE)}
 }
 \value{
-see datails
+invisible(1) on success, -1 or an error (depending on errors parameter) on error
 }
 \description{
 Prepares a query for execution.
-
-If data given, executes query using \link{sqlExecute}.
-
-Optionally fetches results using \link{sqlFetch}.
-}
-\details{
-Return value depends on the combination of parameters:
-\itemize{
-  \item if there were errors during query preparation (or execution or fetching results)
-    return value depends on errors parameter - if errors=TRUE, the vector of error messages
-    will be returned, otherwise -1 will be returned
-  \item if fetch=FALSE or data were not provided and there were no errors during query preparation
-    (and execution), invisible(1) will be returned
-  \item if fetch=TRUE and data were provided and there were no errors during query preparation,
-    execution and fetching results, data.frame with results will be returned
-}
 }
 \examples{
 \dontrun{
   conn = odbcConnect('MyDataSource')
 
-  # prepare, execute and fetch results separatly
   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
   sqlExecute(conn, 'myValue')
   sqlFetchMore(conn)
-
-  # prepare and execute at one time, fetch results separately
-  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue')
-  sqlFetch(conn)
-
-  # prepare, execute and fetch at one time
-  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
-
-  # prepare, execute and fetch at one time, pass additional parameters to sqlFetch()
-  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, stringsAsFactors=FALSE)
 }
 }
 

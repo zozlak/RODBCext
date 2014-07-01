@@ -3,11 +3,13 @@
 \alias{sqlExecute}
 \title{Executes an already prepared query}
 \usage{
-sqlExecute(channel, data = NULL, fetch = FALSE, errors = TRUE,
-  rows_at_time = attr(channel, "rows_at_time"), ...)
+sqlExecute(channel, query = NULL, data = NULL, fetch = FALSE,
+  errors = TRUE, rows_at_time = attr(channel, "rows_at_time"), ...)
 }
 \arguments{
-\item{channel}{ODBC connection obtained by odbcConnect()}
+\item{channel}{ODBC connection obtained by \link[RODBC]{odbcConnect}}
+
+\item{query}{a query string (NULL if query already prepared using \link{sqlPrepare})}
 
 \item{data}{data to pass to sqlExecute (as data.frame)}
 
@@ -15,27 +17,28 @@ sqlExecute(channel, data = NULL, fetch = FALSE, errors = TRUE,
 
 \item{errors}{whether to display errors}
 
-\item{rows_at_time}{number of rows to fetch at one time - see details of \link{sqlQuery}}
+\item{rows_at_time}{number of rows to fetch at one time - see details of \link[RODBC]{sqlQuery}}
 
-\item{...}{parameters to pass to \link{sqlFetchMore} (if fetch=TRUE)}
+\item{...}{parameters to pass to \link[RODBC]{sqlFetchMore} (if fetch=TRUE)}
 }
 \value{
 see datails
 }
 \description{
-Executes an already prepared query. You may prepare query using \link{sqlPrepare}.
+Executes a parameterized query.
 
-Optionally fetches results using \link{sqlFetch}.
+Optionally (fetch=TRUE) fetches results using \link[RODBC]{sqlFetchMore}.
+
+Optionally (query=NULL) uses query already prepared by \link{sqlPrepare}.
 }
 \details{
 Return value depends on the combination of parameters:
 \itemize{
-  \item if there were errors during query execution (or fetching results)
-    return value depends on errors parameter - if errors=TRUE, the vector of error messages
-    will be returned, otherwise -1 will be returned
-  \item if fetch=FALSE and there were no errors during query execution, invisible(1) will be returned
-  \item if fetch=TRUE and there were no errors during query execution and fetching results,
-    data.frame with results will be returned
+  \item if there were errors during query preparation or execution or fetching results
+    return value depends on errors parameter - if errors=TRUE error is thrown,
+    otherwise -1 will be returned
+  \item if fetch=FALSE and there were no errors invisible(1) will be returned
+  \item if fetch=TRUE and there were no errors a data.frame with results will be returned
 }
 }
 \examples{
@@ -44,18 +47,18 @@ Return value depends on the combination of parameters:
 
   # prepare, execute and fetch results separatly
   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
-  sqlExecute(conn, 'myValue')
+  sqlExecute(conn, NULL, 'myValue')
   sqlFetch(conn)
 
   # prepare and execute at one time, fetch results separately
-  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue')
+  sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue')
   sqlFetchMore(conn)
 
   # prepare, execute and fetch at one time
-  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
+  sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
 
   # prepare, execute and fetch at one time, pass additional parameters to sqlFetch()
-  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, stringsAsFactors=FALSE)
+  sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, stringsAsFactors=FALSE)
 }
 }
 
