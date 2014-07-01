@@ -6,7 +6,7 @@ Parameterized queries are the kosher way of executing SQL queries when query str
 
 See [XKCD - Exploits of a Mom](http://xkcd.com/327/)
 
-Morover parametrized queries speed up a query execution if it is repeated many times (because query planning is done only once).
+Morover parametrized queries speed up query execution if it is repeated many times (because query planning is done only once).
 
 ## Installation
 
@@ -35,7 +35,7 @@ devtools::install_github('zozlak/RODBCext')
 
 ### Installing from source via git
 
-If you are 64-bit Linux user, you won't be able to install any package using `install_github()` due to a bug in `devtools`.
+If you are 64-bit Linux user, you won't be able to install any package using `devtools::install_github()` due to a bug in `devtools`.
 In that case:
 
 1) Obtain recent gcc, g++, and gfortran compilers (see above instructions).
@@ -54,9 +54,11 @@ R CMD INSTALL RODBCext
 
 ### ODBC source configuration
 
-For prepared statements to work ODBC driver has to implement `SQLDescribeParam()` ODBC call on a query prepared by `SQLPrepare()` ODBC call. This means:
+Altought it is not necessary, try to enable support for `SQLDescribeParam()` ODBC in your ODBC drivers.
 
-- for Postgresql data sources please check if *Use Server Side Prepare* configuration option is checked (if you are unix/linux user check for line `UseServerSidePrepare = 1` in your *odbc.ini* file)
+This depends on the driver, e.g.:
+
+- In Postgresql data sources please check if *Use Server Side Prepare* configuration option is checked (if you are unix/linux user check for line `UseServerSidePrepare = 1` in your *odbc.ini* file)
 
 ## Usage
 
@@ -67,7 +69,7 @@ In parameterized queries, query execution is splitted in three steps:
    If query has parameters, they are passed in this step.
 3. Fetching results (if there are any).
 
-RODBC already has a function responsible for the 3rd step - `sqlFetchMore()`.
+RODBC already has a function responsible for the 3rd step - `sqlGetResults()`, `sqlFetch()`, `sqlFetchMore()`.
 RODBCext adds two functions responsible for the 1st and 2nd step:
 
 1. `sqlPrepare()`
@@ -80,31 +82,31 @@ conn = odbcConnect("MyODBCSource")
 
 # Run a parameterized query
 sqlPrepare(conn, "SELECT * FROM table WHERE column1 = ? AND column2 = ?")
-sqlExecute(conn, data.frame('column1value', 'column2value'))
-sqlFetchMore(conn)
+sqlExecute(conn, data=data.frame('column1value', 'column2value'))
+sqlGetResults(conn)
 # one-call equivalent:
-sqlPrepare(
+sqlExecute(
   conn, 
-  "SELECT * FROM table WHERE column1 = ? AND column2 = ?", 
+  query="SELECT * FROM table WHERE column1 = ? AND column2 = ?", 
   data=data.frame('column1value', 'column2value'), 
   fetch=TRUE
 )
 
 # Insert many rows to a table:
 sqlPrepare(conn, "INSERT INTO table (charColumn, intColumn) VALUES (?, ?)")
-sqlExecute(conn, data.frame(c('a', 'b', 'c'), 1:3))
+sqlExecute(conn, data=data.frame(c('a', 'b', 'c'), 1:3))
 # one-call equivalent:
-sqlPrepare(
+sqlExecute(
  conn, 
- "INSERT INTO table (charColumn, intColumn) VALUES (?, ?)", 
+ query="INSERT INTO table (charColumn, intColumn) VALUES (?, ?)", 
  data=data.frame(c('a', 'b', 'c'), 1:3)
 )
 
 # Run query without parameter:
 sqlPrepare(conn, "SELECT * FROM table")
 sqlExecute(conn)
-sqlFetchMore(conn)
+sqlGetResults(conn)
 # one-call equivalent:
-sqlPrepare(conn, "SELECT * FROM table", data=data.frame(), fetch=TRUE)
+sqlExecute(conn, query="SELECT * FROM table", fetch=TRUE)
 
 ```
