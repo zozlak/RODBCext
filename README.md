@@ -22,7 +22,7 @@ install.packages('RODBCext')
 
 `Devtools` package provide an easy way to install packages from the GitHub.
 
-Unfortunately due to a bug in `devtools` this solution doesn't work on 64-bit linux platforms :(
+Unfortunately due to a bug in `devtools` this solution doesn't work on 64-bit linux platforms.
 
 
 1) Obtain recent gcc, g++, and gfortran compilers. Windows users can install the
