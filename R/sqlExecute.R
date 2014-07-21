@@ -15,6 +15,7 @@
 
 #' @title Executes an already prepared query
 #' @useDynLib RODBCext
+#' @import RODBC
 #' @description
 #' Executes a parameterized query. 
 #' 
@@ -56,7 +57,13 @@
 #'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
 #'   
 #'   # prepare, execute and fetch at one time, pass additional parameters to sqlFetch()
-#'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, stringsAsFactors=FALSE)
+#'   sqlExecute(
+#'     conn, 
+#'     "SELECT * FROM myTable WHERE column = ?", 
+#'     'myValue', 
+#'     TRUE, 
+#'     stringsAsFactors=FALSE
+#'   )
 #' }
 sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE, rows_at_time=attr(channel, "rows_at_time"), ...)
 {

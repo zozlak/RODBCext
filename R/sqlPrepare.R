@@ -15,6 +15,7 @@
 
 #' @title Prepares a query for execution
 #' @useDynLib RODBCext
+#' @import RODBC
 #' @description
 #' Prepares a query for execution.
 #' @param channel ODBC connection obtained by \link{odbcConnect}

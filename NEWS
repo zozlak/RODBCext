@@ -1,20 +1,34 @@
---------------------
+Changes in RODBCext 0.2.2 (2014-07-07)
+
+  * Some minor changes in RODBCext.c to avoid compilation errors on Solaris
+
+Changes in RODBCext 0.2.1 (2014-07-04)
+
+  * Some minor changes to eliminate notices raised on a package check:
+    * too long line in sqlExec() examples splitted
+    * @import annotations added 
+
 Changes in RODBCext 0.2 (2014-07-01)
 
-- Changes in API - ability to prepare and execute query in one call moved from 
-  sqlPrepare() to sqlExec():
-  - sqlPrepare() now takes only odbcHandler, queryString and errors arguments
-  - sqlExec() now takes additional queryString=NA argument
+  * Changes in API - ability to prepare and execute query in one call moved 
+    from sqlPrepare() to sqlExec():
+    * sqlPrepare() now takes only channel, query and errors arguments
+    * sqlExec() now takes additional query=NA argument
 
-- Added support for drivers which don't provide SQLDescribeParam() ODBC call
-  (by using data types from data passed to sqlExecute())
+  * Added support for drivers which don't provide SQLDescribeParam() ODBC call
+    (by applying data types from data passed to sqlExecute())
 
-- sqlExec() now merges results of all queries if nrows(data) > 1 and fetch=TRUE
+  * sqlExec() now merges results of all queries if nrows(data) > 1 and 
+    fetch=TRUE
 
-- Added functions sqlFetchMore() and odbcFetchRows() which avoid calls to 
-  RODBC::sqlFetchMore() and RODBC::odbcFetchRows() when connection handle is 
-  in a "query prepared but not executed" state (which caused R crashes)
+  * Added functions sqlFetchMore() and odbcFetchRows() which avoid calls to 
+    RODBC::sqlFetchMore() and RODBC::odbcFetchRows() when connection handle is 
+    in a "query prepared but not executed" state (which caused R to crash)
 
-- Switch from RODBC::sqlFetchMore() to RODBC::sqlGetResults() for fetching 
-  results (now we don't care about queries which do not produce any results
-  like UPDATE, DELETE, CREATE, etc. queries)
+  * Switch from RODBC::sqlFetchMore() to RODBC::sqlGetResults() for fetching 
+    results (now we don't care about queries which do not produce any results
+    like UPDATE, DELETE, CREATE, etc. queries)
+
+Changes in RODBCext 0.1 (2014-05-28)
+
+  * First version of the package.

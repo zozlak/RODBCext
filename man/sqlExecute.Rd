@@ -19,7 +19,7 @@ sqlExecute(channel, query = NULL, data = NULL, fetch = FALSE,
 
 \item{rows_at_time}{number of rows to fetch at one time - see details of \link[RODBC]{sqlQuery}}
 
-\item{...}{parameters to pass to \link[RODBC]{sqlFetchMore} (if fetch=TRUE)}
+\item{...}{parameters to pass to \link[RODBC]{sqlGetResults} (if fetch=TRUE)}
 }
 \value{
 see datails
@@ -27,7 +27,7 @@ see datails
 \description{
 Executes a parameterized query.
 
-Optionally (fetch=TRUE) fetches results using \link[RODBC]{sqlFetchMore}.
+Optionally (fetch=TRUE) fetches results using \link[RODBC]{sqlGetResults}.
 
 Optionally (query=NULL) uses query already prepared by \link{sqlPrepare}.
 }
@@ -48,17 +48,23 @@ Return value depends on the combination of parameters:
   # prepare, execute and fetch results separatly
   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
   sqlExecute(conn, NULL, 'myValue')
-  sqlFetch(conn)
+  sqlGetResults(conn)
 
   # prepare and execute at one time, fetch results separately
   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue')
-  sqlFetchMore(conn)
+  sqlGetResults(conn)
 
   # prepare, execute and fetch at one time
   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
 
   # prepare, execute and fetch at one time, pass additional parameters to sqlFetch()
-  sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, stringsAsFactors=FALSE)
+  sqlExecute(
+    conn,
+    "SELECT * FROM myTable WHERE column = ?",
+    'myValue',
+    TRUE,
+    stringsAsFactors=FALSE
+  )
 }
 }
 

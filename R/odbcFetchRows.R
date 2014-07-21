@@ -15,6 +15,7 @@
 
 #' @title Overlay over \link[RODBC]{odbcFetchRows} 
 #' @useDynLib RODBCext
+#' @import RODBC
 #' @description
 #' RODBC::odbcFetchRows crashes if the ODBC channel is in "query prepared
 #' but already not executed" state.

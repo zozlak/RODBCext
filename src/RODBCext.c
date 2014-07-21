@@ -68,7 +68,7 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
     switch(TYPEOF(VECTOR_ELT(data, col))) { 
       case REALSXP:
         column->RData[0] = REAL(VECTOR_ELT(data, col))[row];
-        if(ISNAN(column->IData[0])){
+        if(ISNAN(REAL(VECTOR_ELT(data, col))[row])){
           column->IndPtr[0] = SQL_NULL_DATA;
         }else{
           column->IndPtr[0] = SQL_NTS;
@@ -76,7 +76,7 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
         break;
       case INTSXP:
         column->IData[0] = INTEGER(VECTOR_ELT(data, col))[row];
-        if(column->IData[0] == NA_INTEGER){
+        if(INTEGER(VECTOR_ELT(data, col))[row] == NA_INTEGER){
           column->IndPtr[0] = SQL_NULL_DATA;
         }else{
           column->IndPtr[0] = SQL_NTS;
