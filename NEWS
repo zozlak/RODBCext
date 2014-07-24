@@ -1,3 +1,7 @@
+Changes in RODBCext 0.2.3 (2014-07-024)
+
+  * A Vignette about paremeterized SQL queries added.
+
 Changes in RODBCext 0.2.2 (2014-07-07)
 
   * Some minor changes in RODBCext.c to avoid compilation errors on Solaris

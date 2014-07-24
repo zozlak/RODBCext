@@ -1,5 +1,5 @@
 Package: RODBCext
-Version: 0.2.2
+Version: 0.2.3
 Authors@R: c(person("Mateusz", "Zoltak", role = c("aut", "cre"),
     email = "zozlak@zozlak.org"),
     person("Brian", "Ripley", role = c("aut")),
@@ -11,6 +11,8 @@ SystemRequirements: An ODBC3 driver manager and drivers.
 Depends:
     R (>= 3.0.0),
     RODBC (>= 1.3.0)
+Suggests:
+    knitr
 LazyLoad: yes
 Biarch: yes
 License: GPL-2 | GPL-3
@@ -19,3 +21,4 @@ Author: Mateusz Zoltak [aut, cre],
     Michael Lapsley [aut]
 Maintainer: Mateusz Zoltak <zozlak@zozlak.org>
 NeedsCompilation: yes
+VignetteBuilder: knitr
