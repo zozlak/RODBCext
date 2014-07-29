@@ -3,60 +3,64 @@ title: "Parameterized SQL queries"
 author: "Mateusz Zoltak"
 date: "24.07.2014"
 output:
-  word_document:
-    highlight: tango
-  pdf_document:
-    number_sections: yes
   html_document:
     highlight: tango
     number_sections: yes
+  pdf_document:
+    number_sections: yes
+  word_document:
+    highlight: tango
 ---
 <!--
 %\VignetteEngine{knitr::rmarkdown}
 %\VignetteIndexEntry{An R Markdown Vignette with knitr}
 -->
 
-Package [RODBCext](http://cran.r-project.org/web/packages/RODBCext)
-provides support for parameterized queries to the 
-[RODBC](http://cran.r-project.org/web/packages/RODBC) ODBC database 
-connectivity package. This document describes what are paremeterized queries
-and in what cases it should be used. In addition some examples of ROBDCext
-usage are provided.
+The package [RODBCext](http://cran.r-project.org/web/packages/RODBCext)
+is an extension of the
+[RODBC](http://cran.r-project.org/web/packages/RODBC) database 
+connectivity package. It provides support for parameterized queries. This 
+document describes what parameterized queries are and when they should be used.
+In addition some examples of ROBDCext usage are shown.
 
-It is assumed that you already know [SQL](http://en.wikipedia.org/wiki/SQL) 
-and ODBC basics and the  [RODBC](http://cran.r-project.org/web/packages/RODBC)
-package. If not, please read about them first, e.g. see the [ODBC Connectivity 
-vignette of the RODBC package](http://cran.r-project.org/web/packages/RODBC/vignettes/RODBC.pdf).
+It is assumed that you already know the 
+[RODBC](http://cran.r-project.org/web/packages/RODBC) package
+and the basics of [SQL](http://en.wikipedia.org/wiki/SQL) 
+and ODBC. If not, please read about them first, e.g. see the [ODBC Connectivity 
+vignette](http://cran.r-project.org/web/packages/RODBC/vignettes/RODBC.pdf)
+of the RODBC package.
 
 # What are parameterized queries for?
 
-Paremeterized queries (also known as prepared statements) are a technique of a
+Parameterized queries (also known as prepared statements) are a technique of 
 query execution which separates a query string from query parameters values. 
-There are two main reasons to use this technique:
+There are two main reasons for using this technique:
 
-* To avoid SQL injections.
-* To speed up query execution in some scenarios.
+* avoiding SQL injections,
+* speeding up query execution in some scenarios.
 
-Both of them were discussed below.
+Both are discussed below.
 
 # SQL injections
 
-Technically speaking SQL injection is a type of an attack against 
-data-driven applications. If you are using SQL data sources and think there is 
-no connection between your work in R and the definition stated above you are 
-probably wrong. Consider that:
+SQL injection is an attack against your code which uses SQL queries. Malicious 
+query parameter values are passed in order to modify and execute a query. If 
+you use SQL data sources, it is highly likely that sooner or later your R code 
+will experience a problem similar to an SQL injection (or an SQL injection 
+itself). Consider the following:
 
 * Even data from trusted data sources (even SQL ones) can cause problems in SQL 
   queries if use improper programming techniques.
 * Are you sure that your data came from a really trusted source?
-* All Shiny applications are web and data-driven applications.
+* All Shiny applications which process data from SQL data sources can be a 
+  target of an SQL injection attack.
 
 ## Example - an apostrophe sign in data
 
-Let's begin with a simple example illustrating how your own data can lead to
-problems similar to SQL injections attack.
+Let us begin with a simple example illustrating how your own data can lead to 
+problems similar to a SQL injections attack.
 
-Imagine that we have a simple database with only one table called *cakes*
+Imagine a simple SQL database with a table called *cakes*:
 
 cake                | price
 --------------------|--------
@@ -65,13 +69,15 @@ Strawberry cupcake  | 3
 Kevin's Cherry Tart | 12.3
 ...                 | ...
 
-We were given an CSV data file with a same structure containing new prices 
-and asked to update the database. We have written a R code as bellow:
+We receive a CSV data file containing the same database but with new  prices. 
+You are asked to update the database. So you write your R code as below:
 
 ```{r eval = FALSE}
 library(RODBC)
+
 connHandle <- odbcConnect("cakesDatabase")
 newData <- read.csv("newData.csv", stringsAsFactors = F)
+
 for(row in 1:nrow(newData)){
   query <- paste0(
     "UPDATE cakes 
@@ -80,14 +86,16 @@ for(row in 1:nrow(newData)){
   )
   sqlQuery(connHandle, query)
 }
+
 odbcClose(connHandle)
 ```
 
-Such code will fail on a *Kevin's Cherry Tart* because this name of a cake 
-contains an apostrophe and an apostrophe has a special meaning in SQL 
-language. To deal with the *Kevin's Cherry Tart* we need to **escape** the 
-apostrophe being a part of the cake's name so the database know that it doesn't
-mark the end of name. 
+Such a code will fail on a Kevin's Cherry Tart because this name contains an 
+apostrophe. The resulting query would be 
+`UPDATE cakes SET price = 12.3 WHERE cake = 'Kevin's Cherry Tart';`
+which is not a proper SQL query. To deal with the *Kevin's Cherry Tart* we need 
+to **escape** the apostrophe in the cake's name so that the database knows that
+it doesn't denote the end of the string value.
 
 ## Example - simple SQL injection
 
@@ -103,14 +111,16 @@ Lee       | Andrew
 Wilson    | Linda
 ...       | ...
 
-A next school year begun and new pupils came. We were given an CSV file
-with the same structure as table *students* and asked to add it to the 
-database, so we prepared a simple script:
+A new school year has begun and new students have come. We have just received a CSV 
+file with the same structure as the table *students* and we are asked to add it to 
+the database. So we prepare a simple script:
 
 ```{r eval = FALSE}
 library(RODBC)
+
 connHandle <- odbcConnect('studentsDatabase')
 newStudents <- read.csv('newStudents.csv', stringsAsFactors = F)
+
 for(row in 1:nrow(newStudents)){
   query <- paste0(
     "INSERT INTO students (first_name, last_name)
@@ -121,137 +131,147 @@ for(row in 1:nrow(newStudents)){
   )
   sqlQuery(P, query)
 }
+
 odbcClose(connHandle)
 ```
 
-But unfortunately one of our new pupils were
+Unfortunately one of our new students' name is:
 
 last_name | first_name
 ----------|----------------------------------
 Smith     | Robert'); DROP TABLE students; --
 
-For that pupil our query would be:
+For this student our query would be:
 
 ```
 INSERT INTO students (last_name, first_name)
   VALUES ('Smith', 'Robert'); DROP TABLE students; --')
 ```
 
-This are in fact two SQL queries and an SQL comment:
+These are in fact two SQL queries and one SQL comment:
 
 * `INSERT INTO students (last_name, first_name) VALUES ('Smith', 'Robert');`
 * `DROP TABLE students;`
 * `--')`
 
-Execution of such a query can lead to a serious data loss. Hopefully we have a
-backup or do not have sufficient privileges to drop the *students* table. To 
-avoid such a threat we should properly **escape** values in our SQL queries.
+Execution of such a query can lead to a serious data loss (hopefully we have 
+made a backup copy or do not have sufficient rights to drop the *students*
+table). To avoid such problems we should properly **escape** parameters values 
+in our SQL queries.
 
 ## How to escape values in SQL queries?
 
-At this point we already know that **we should properly escape values** in our
-SQL queries. There are many techniques of doing that:
+At this point we already know that **we should properly escape parameters 
+values** in our SQL queries. There are many techniques of doing that:
 
-* Using high-level functions which deal with escaping values for us.
-* Manually checking data types.
+* Manually checking the data types.
 * Using parameterized queries.
-
-### Using high-level functions which deal with esaping values for us
-
-This is the most straightforward solution and as you probably want to focus on
-data analysis and not on technical issues it is **strongly adviced** to use it.
-
-Many packages provide such high-level interfaces, e.g.
-
-* [dplyr](http://cran.r-project.org/web/packages/dplyr)
-  which provides you with a brilliant R to SQL mapper and allows you to 
-  completely forget about the SQL.
-* [RODBC](http://cran.r-project.org/web/packages/RODBC)
-  which provides high-level functions like *sqlSave(), sqlUpdate(), sqlCopy(),
-  sqlCopyTable()*.
-
-Anyway in some cases you may come to point where such high-level interfaces
-won't satisfy your needs and you will be forced to use lower-level methods.
+* Using high-level functions which escape values for us.
 
 ### Manually checking data types
 
 You can escape your data manually, e.g.
 
 * cast numeric columns to numbers using *as.numeric(column)* or 
-  *sprintf("%d %f", column1, column2)*,
+  *sprintf("%d %f", integerColumn, realColumn)*,
 * cast dates using *as.character(as.Date(column))*,
-* escape strings using *gsub("'", "\\'", column)*,
+* escape strings using *gsub("'", "''", column)*,
 * etc.
 
-This is possible but is also very error prone. The most complicated is to 
-escape string values properly. Everyone knows that apostrophes have to be
-escaped, but
+This is possible but is also very error prone, especially when escaping string 
+values. Everyone knows that apostrophes have to be escaped, but:
 
 * Different database systems may use different escape sequences (e.g. C-style
   with a backslash or repeat-style a with double apostrophe).
-* Your database system may handle HTML/XML entities or inserting characters
-  by an Unicode value (or many, many others strange ways of data input), so 
-  e.g. *my&apos;value* or *my\\U0027code* will be converted into *my'value*
-  and then lead to errors in your query.
+* our database system may handle HTML/XML entities or inserting characters by a 
+  Unicode value (or many, many other strange ways of data input), so e.g. 
+  *my&apos;value* or *my\\U0027value* will be converted into *my'value* and 
+  then lead to errors in your query.
 
-It is practically impossible to remember about all those caveats by yourself,
-so it is **strongly adviced not to use this method**.
+It is almost impossible to remember all caveats by yourself, so it is 
+**strongly advised not to use this method**.
 
 ### Using parameterized queries
 
 Another solution is to separate the query string from its parameters (data). 
-In such a case query execution is dived into two steps
+In such case a query execution is divided into two steps:
 
 * query parsing and planing,
 * passing parameter values to query and query execution.
 
-As query parameters are passed separately ]parameter values can't modify
+As query parameters are passed separately, parameter values cannot modify 
 (and break) the query string. To indicate places in the query where parameters 
-will be placed a special character is used, typically a question mark.
+will be placed, a special character is used, typically a question mark.
 
-Let's rewrite our cakes example using the *sqlExecute(connHandle, queryString, 
+Let us rewrite our cakes example using the *sqlExecute(connHandle, queryString, 
 data)* function from the *RODBCext* package:
 
 ```{r eval = FALSE}
 library(RODBCext)
+
 connHandle <- odbcConnect("cakesDatabase")
 newData <- read.csv("newData.csv", stringsAsFactors = F)
+
 query <- "UPDATE cakes SET price = ? WHERE cake = ?"
 for(row in 1:nrow(newData)){
   sqlExecute(connHandle, query, newData[i, ])
 }
+
 odbcClose(connHandle)
 ```
 
-We replaced parameter values in query with a question mark and passed query
-and data as separate function parameters. Not only we made our code SQL
-injections resistant, but it it is also easier to read now.
+We replaced the parameter values in query with a question mark and passed query
+and data as separate function parameters. We made our code not only SQL 
+injection resistant, but also easier to read.
 
-Moreover function *sqlExecute()* supports vectorized data, so we can make it 
-even simpler:
+Moreover, the function function *sqlExecute()* supports vectorized data, so we 
+can make it even simpler:
 
 ```{r eval = FALSE}
 library(RODBCext)
+
 connHandle <- odbcConnect("cakesDatabase")
 newData <- read.csv("newData.csv", stringsAsFactors = F)
+
 query <- "UPDATE cakes SET price = ? WHERE cake = ?"
 sqlExecute(connHandle, query, newData)
+
 odbcClose(connHandle)
 ```
 
+### Using high-level functions which deal with esaping values for us
+
+This would be the most straightforward solution. 
+
+An excellent example is [dplyr](http://cran.r-project.org/web/packages/dplyr), 
+which provides a complete R to SQL mapper and allows us to completely forget 
+about the SQL. Another example are the *sqlSave(), sqlUpdate(), sqlCopy() and 
+sqlCopyTable()* functions from the 
+[RODBC](http://cran.r-project.org/web/packages/RODBC) package which deal with 
+escaping values for us. 
+
+The problem is that:
+* *Dplyr* escapes values rather naively. With respect to strings only simple ' 
+  to '' escaping is performed **which is enough to prevent silly errors but 
+  will fail against more advanced SQL injections**. 
+* *RODBC's* high-level functions escape values in a safe way (by internally using 
+  parameterized queries), but have very limited functionality. Interestingly, 
+  judging from the comments in the source code, the parameterized queries have 
+  been introduced to them not to make them safe but to improve speed.
+
 ## Summary
 
-When using SQL we must pay attention to properly **escape** query parameters 
-values. This could be achieved by:
+When using SQL we must pay attention to escape query parameter values properly. 
+The existing R database connectivity packages do not provide a completely 
+reliable way of doing that. A set of SQL injections safe functions provides 
+very limited functionality and more flexible functions are using naive escaping 
+methods. That is why RODBCext is a preferred way to make your R code SQL 
+injections safe.
 
-* use of R to SQL mapper which will do all the SQL stuff for us - e.g. 
-  [dplyr](http://cran.r-project.org/web/packages/dplyr/vignettes/databases.html),
-* avoid manual SQL query preparation by using high-level functions provided by 
-  the database connectivity packages e.g. *sqlSave(), sqlUpdate(),
-  sqlCopyTable()* functions of the 
-  [RODBC](http://cran.r-project.org/web/packages/RODBC) package,
-* use of parameterized queries - e.g. 
-  [RODBCext](http://cran.r-project.org/web/packages/RODBCext).
+I hope [dplyr](http://cran.r-project.org/web/packages/dplyr) developers will 
+switch to use parameterized queries internally at some point. This would 
+provide R community with a brilliant and safe R to SQL mapper and to forget 
+about a manual preparation of SQL queries.
 
 # Speeding up query execution using parameterized queries
 
@@ -309,7 +329,7 @@ odbcClose(connHandle)
 
 ## Example - speeding up a SELECT query
 
-Also repeated execution of a SELECT query can benefit from using paremeterized
+Also repeated execution of a SELECT query can benefit from using parameterized
 variant:
 
 ```{r eval = FALSE}
@@ -394,9 +414,14 @@ connection handlers from RODBC:
 Allows execution of SQL queries separated from query parameters values, e.g.:
 
 ```{r eval = FALSE}
+library(RODBCext)
 connHandle <- odbcConnect("myDatabase")
-data <- sqlQuery(connHandle, "SELECT * FROM myTable WHERE column = 'myValue'") # good old RODBC call
-data <- sqlExecute(connHandle, "SELECT * FROM myTable WHERE column = ?", 'myValue', fetch = TRUE) # RODBCext equivalent
+
+# good old RODBC call
+data <- sqlQuery(connHandle, "SELECT * FROM myTable WHERE column = 'myValue'") 
+# RODBCext equivalent
+data <- sqlExecute(connHandle, "SELECT * FROM myTable WHERE column = ?", 'myValue', fetch = TRUE) 
+
 odbcClose(connHandle)
 ```
 
@@ -404,9 +429,12 @@ The nice thing is that `sqlExecute()` (in opposite to `sqlQuery()`) supports
 vectorization. In the example below `data` will contain results of all five
 queries bound by rows.
 ```{r eval = FALSE}
+library(RODBCext)
 connHandle <- odbcConnect("myDatabase")
+
 filterData <- data.frame('column1' = 1:5, column2 = c('a', 'b', 'c', 'd', 'e'))
 data <- sqlExecute(connHandle, "SELECT * FROM myTable WHERE column1 = ? AND column2 = ?", filterData, fetch = TRUE)
+
 odbcClose(connHandle)
 ```
 
@@ -414,22 +442,28 @@ Results can be also fetched separately using
 [RODBC's](http://cran.r-project.org/web/packages/RODBC) `sqlGetResults()`.
 This also provides a way to fetch results in parts:
 ```{r eval = FALSE}
+library(RODBCext)
 connHandle <- odbcConnect("myDatabase")
+
 sqlExecute(connHandle, "SELECT * FROM myTable WHERE column = ?", 'myValue', fetch = FALSE)
 data <- sqlGetResults(connHandle, max = 10) # fetch no more than 10 first rows
 # data processing comes here
 data <- sqlGetResults(connHandle) # fetch all other rows
+
 odbcClose(connHandle)
 ```
 
 As `sqlExecute()` uses internally `sqlGetResults()` to fetch results of the
 query, it also accept all parameters of the `sqlGetResults()`:
 ```{r eval = FALSE}
+library(RODBCext)
 connHandle <- odbcConnect("myDatabase")
+
 sqlExecute(
   connHandle, "SELECT * FROM myTable WHERE column = ?", 'myValue', 
   fetch = TRUE, stringsAsFactors = FALSE, dec = ",", max = 50, as.is = TRUE
 )
+
 odbcClose(connHandle)
 ```
 

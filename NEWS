@@ -1,4 +1,4 @@
-Changes in RODBCext 0.2.3 (2014-07-024)
+Changes in RODBCext 0.2.3 (2014-07-29)
 
   * A Vignette about paremeterized SQL queries added.
 
@@ -9,20 +9,20 @@ Changes in RODBCext 0.2.2 (2014-07-07)
 Changes in RODBCext 0.2.1 (2014-07-04)
 
   * Some minor changes to eliminate notices raised on a package check:
-    * too long line in sqlExec() examples splitted
+    * too long line in sqlExecute() examples splitted
     * @import annotations added 
 
 Changes in RODBCext 0.2 (2014-07-01)
 
   * Changes in API - ability to prepare and execute query in one call moved 
-    from sqlPrepare() to sqlExec():
+    from sqlPrepare() to sqlExecute():
     * sqlPrepare() now takes only channel, query and errors arguments
-    * sqlExec() now takes additional query=NA argument
+    * sqlExecute() now takes additional query=NA argument
 
   * Added support for drivers which don't provide SQLDescribeParam() ODBC call
     (by applying data types from data passed to sqlExecute())
 
-  * sqlExec() now merges results of all queries if nrows(data) > 1 and 
+  * sqlExecute() now merges results of all queries if nrows(data) > 1 and 
     fetch=TRUE
 
   * Added functions sqlFetchMore() and odbcFetchRows() which avoid calls to 
