@@ -1,3 +1,9 @@
+Changes in RODBCext 0.2.4 (2014-07-31)
+
+  * SQL_RESULT_CHECK macro doesn't rise errors on SQL_NO_DATA state anymore.
+    This prevents rising errors on queries which return SQL_NO_DATA state on
+    execution (e.g. UPDATE queries which update no records)
+
 Changes in RODBCext 0.2.3 (2014-07-29)
 
   * A Vignette about paremeterized SQL queries added.

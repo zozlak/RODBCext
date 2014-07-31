@@ -19,7 +19,7 @@
 
 /* macro to check and handle ODBC API calls results */
 #define SQL_RESULT_CHECK(res, handle, errorMessage, ret) \
-  if(res != SQL_SUCCESS && res != SQL_SUCCESS_WITH_INFO){ \
+  if(res != SQL_SUCCESS && res != SQL_SUCCESS_WITH_INFO && res != SQL_NO_DATA){ \
     geterr(handle); \
     errlistAppend(handle, errorMessage); \
     FreeHandleResources(handle); \
@@ -317,7 +317,7 @@ SEXP RODBCExecute(SEXP chan, SEXP data, SEXP nrows)
       CopyParameters(thisHandle->ColData, data, row);
   
       res = SQLExecute(thisHandle->hStmt);
-      SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLExecute failed"), ScalarInteger(-1));
+      SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLExecute failedaa"), ScalarInteger(-1));
     }
   }
   
