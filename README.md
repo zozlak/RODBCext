@@ -1,5 +1,7 @@
 # RODBCext
 
+[![Travis-CI Build Status](https://travis-ci.org/zozlak/RODBCext.png?branch=master)](https://travis-ci.org/zozlak/RODBCext)
+
 Extension to the RODBC R package providing support for parameterized queries.
 
 Parameterized queries are the kosher way of executing SQL queries when query string contain data from untrusted sources (especially user input).

@@ -32,11 +32,16 @@
 #'   \item if fetch=TRUE and there were no errors a data.frame with results will be returned
 #' }
 #' @param channel ODBC connection obtained by \link[RODBC]{odbcConnect}
-#' @param query a query string (NULL if query already prepared using \link{sqlPrepare})
+#' @param query a query string (NULL if query already prepared using
+#'   \link{sqlPrepare})
 #' @param data data to pass to sqlExecute (as data.frame)
 #' @param fetch whether to automatically fetch results (if data provided)
 #' @param errors whether to display errors
-#' @param rows_at_time number of rows to fetch at one time - see details of \link[RODBC]{sqlQuery}
+#' @param rows_at_time number of rows to fetch at one time - see details of
+#'   \link[RODBC]{sqlQuery}
+#' @param force_loop whether to execute queries in the explicit loop with 
+#'   separate query planing for each iteration (usefull if executing a query 
+#'   invalidates its plan, e.g. EXEC queries on Ms SQL Server)
 #' @param ... parameters to pass to \link[RODBC]{sqlGetResults} (if fetch=TRUE)
 #' @return see datails
 #' @export
@@ -65,13 +70,30 @@
 #'     stringsAsFactors=FALSE
 #'   )
 #' }
-sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE, rows_at_time=attr(channel, "rows_at_time"), ...)
+sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE, rows_at_time=attr(channel, "rows_at_time"), force_loop=FALSE, ...)
 {
+  stopifnot(
+    odbcValidChannel(channel),
+    is.vector(fetch), is.logical(fetch), length(fetch) == 1, all(!is.na(fetch)),
+    is.vector(errors), is.logical(errors), length(errors) == 1, all(!is.na(errors)),
+    is.vector(rows_at_time), is.numeric(rows_at_time), length(rows_at_time) == 1, all(!is.na(rows_at_time)),
+    is.vector(force_loop), is.logical(force_loop), length(force_loop) == 1, all(!is.na(force_loop))
+  )
   if(!odbcValidChannel(channel)){
     stop("first argument is not an open RODBC channel")
   }
   
-  # Prepare query (if proveded)
+  if(force_loop){
+    stopifnot(
+      is.vector(query), is.character(query), length(query) == 1, all(!is.na(query))
+    )
+    data = as.data.frame(data)
+    for(i in seq_along(data[1, ])){
+      sqlExecute(channel, query, data[i, ], fetch, errors, rows_at_time, FALSE, ...)
+    }
+  }
+  
+  # Prepare query (if provided)
   if(!is.null(query)){
     stat <- sqlPrepare(channel, query, errors)
     if(stat == -1L){

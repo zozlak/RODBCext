@@ -43,8 +43,9 @@ sqlPrepare <- function(channel, query, errors = TRUE)
   if(nchar(enc <- attr(channel, "encoding"))){
     query <- iconv(query, to=enc)
   }
+  query = as.character(query)
   
-  stat <- .Call("RODBCPrepare", attr(channel, "handle_ptr"), as.character(query))
+  stat <- .Call("RODBCPrepare", attr(channel, "handle_ptr"), query)
   if(stat == -1L) {
     if(errors){
       stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
@@ -53,5 +54,6 @@ sqlPrepare <- function(channel, query, errors = TRUE)
       return(stat)
     }
   }
+  attr(channel, 'query') = query
   return(invisible(stat))
 }

@@ -90,14 +90,14 @@ void errlistAppend(pRODBCHandle thisHandle, const char *string)
 
 void errorFree(SQLMSG *node)
 {
-    if(!node) return;
-    if(node->next)
-  errorFree(node->next);
-    if(node) {
-  Free(node->message);
-  Free(node);
-  node = NULL;
-    }
+  if(!node) return;
+  if(node->next)
+    errorFree(node->next);
+  if(node) {
+    Free(node->message);
+    Free(node);
+    node = NULL;
+  }
 }
 
 void geterr(pRODBCHandle thisHandle)
@@ -117,6 +117,7 @@ void geterr(pRODBCHandle thisHandle)
     if(retval != SQL_SUCCESS && retval != SQL_SUCCESS_WITH_INFO)
       break;
     sprintf(message,"%s %d %s", sqlstate, (int)NativeError, msg);
+warning(message);
     errlistAppend(thisHandle, message);
   }
 }

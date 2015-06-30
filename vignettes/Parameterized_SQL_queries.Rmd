@@ -10,11 +10,11 @@ output:
     number_sections: yes
   word_document:
     highlight: tango
+vignette: >
+  %\VignetteIndexEntry{Parameterized SQL queries}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{An R Markdown Vignette with knitr}
--->
 
 The package [RODBCext](http://cran.r-project.org/web/packages/RODBCext)
 is an extension of the

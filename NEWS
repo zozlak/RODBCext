@@ -1,3 +1,13 @@
+Changes in RODBCext 0.2.5 (2015-06-30)
+
+  * force_loop=FALSE parameter added to sqlExecute() acting as a workaround
+    for queries wchich has to be planned again before each call to sqlExecute()
+    ODBC call ("EXEC"" queries on MS SQL Server are an example). 
+    Setting force_loop=TRUE allows to use a vectorized form of the sqlExecute()
+    despite this limitation. Such a call does not benefit from the speed 
+    increase provided by parameterized queries but makes the package API
+    more ortogonal.
+
 Changes in RODBCext 0.2.4 (2014-07-31)
 
   * SQL_RESULT_CHECK macro doesn't rise errors on SQL_NO_DATA state anymore.
