@@ -3,7 +3,10 @@ language: r
 
 sudo: required
 
-r_github_packages:
+apt_packages:
+  - unixodbc-dev
+
+r_check_revdep: true
 
 after_success:
 
