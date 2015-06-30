@@ -83,14 +83,18 @@ sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE,
     stop("first argument is not an open RODBC channel")
   }
   
+  # workaround for queries wchich has to be planned before each execution
   if(force_loop){
-    stopifnot(
-      is.vector(query), is.character(query), length(query) == 1, all(!is.na(query))
-    )
     data = as.data.frame(data)
-    for(i in seq_along(data[1, ])){
-      sqlExecute(channel, query, data[i, ], fetch, errors, rows_at_time, FALSE, ...)
+    stopifnot(
+      is.vector(query), is.character(query), length(query) == 1, all(!is.na(query)),
+      nrow(data) > 0
+    )
+    results = list()
+    for(i in seq_along(data[, 1])){
+      results[[i]] = sqlExecute(channel, query, data[i, ], fetch, errors, rows_at_time, FALSE, ...)
     }
+    return(do.call(rbind, results))
   }
   
   # Prepare query (if provided)
