@@ -6,7 +6,7 @@ sudo: required
 apt_packages:
   - unixodbc-dev
 
-r_check_revdep: true
+r_check_revdep: false
 
 after_success:
 
