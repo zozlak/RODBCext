@@ -16,15 +16,15 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-The package [RODBCext](http://cran.r-project.org/web/packages/RODBCext)
+The package [RODBCext](http://cran.r-project.org/package=RODBCext)
 is an extension of the
-[RODBC](http://cran.r-project.org/web/packages/RODBC) database 
+[RODBC](http://cran.r-project.org/package=RODBC) database 
 connectivity package. It provides support for parameterized queries. This 
 document describes what parameterized queries are and when they should be used.
 In addition some examples of ROBDCext usage are shown.
 
 It is assumed that you already know the 
-[RODBC](http://cran.r-project.org/web/packages/RODBC) package
+[RODBC](http://cran.r-project.org/package=RODBC) package
 and the basics of [SQL](http://en.wikipedia.org/wiki/SQL) 
 and ODBC. If not, please read about them first, e.g. see the [ODBC Connectivity 
 vignette](http://cran.r-project.org/web/packages/RODBC/vignettes/RODBC.pdf)
@@ -244,11 +244,11 @@ odbcClose(connHandle)
 
 This would be the most straightforward solution. 
 
-An excellent example is [dplyr](http://cran.r-project.org/web/packages/dplyr), 
+An excellent example is [dplyr](http://cran.r-project.org/package=dplyr), 
 which provides a complete R to SQL mapper and allows us to completely forget 
 about the SQL. Another example are the *sqlSave(), sqlUpdate(), sqlCopy() and 
 sqlCopyTable()* functions from the 
-[RODBC](http://cran.r-project.org/web/packages/RODBC) package which deal with 
+[RODBC](http://cran.r-project.org/package=RODBC) package which deal with 
 escaping values for us. 
 
 The problem is that:
@@ -269,7 +269,7 @@ very limited functionality and more flexible functions are using naive escaping
 methods. That is why RODBCext is a preferred way to make your R code SQL 
 injections safe.
 
-I hope [dplyr](http://cran.r-project.org/web/packages/dplyr) developers will 
+I hope [dplyr](http://cran.r-project.org/package=dplyr) developers will 
 switch to use parameterized queries internally at some point. This would 
 provide R community with a brilliant and safe R to SQL mapper and to forget 
 about a manual preparation of SQL queries.
@@ -403,7 +403,7 @@ powerful data processing engines (which modern SQL databases already are).
 ## RODBCext
 
 RODBCext package tries to fill this gap by introducing parameterized queries
-support on the top of the [RODBC](http://cran.r-project.org/web/packages/RODBC)
+support on the top of the [RODBC](http://cran.r-project.org/package=RODBC)
 package. RODBCext provides only two functions, both of them using database 
 connection handlers from RODBC:
 
@@ -440,7 +440,7 @@ odbcClose(connHandle)
 ```
 
 Results can be also fetched separately using 
-[RODBC's](http://cran.r-project.org/web/packages/RODBC) `sqlGetResults()`.
+[RODBC's](http://cran.r-project.org/package=RODBC) `sqlGetResults()`.
 This also provides a way to fetch results in parts:
 ```{r eval = FALSE}
 library(RODBCext)
