@@ -1,14 +1,16 @@
 # http://docs.travis-ci.com/user/languages/r/
 language: r
+
 cache: packages
-sudo: required
 
 r:
   - release
   - devel
 
-apt_packages:
-  - unixodbc-dev
+addons:
+  apt:
+    packages:
+      - unixodbc-dev
 
 r_check_revdep: false
 
