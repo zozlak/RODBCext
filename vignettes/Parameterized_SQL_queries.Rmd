@@ -136,7 +136,6 @@ odbcClose(connHandle)
 ```
 
 Unfortunately one of our new students' name is:
-=======
 
 last_name | first_name
 ----------|----------------------------------

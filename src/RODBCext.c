@@ -54,7 +54,6 @@ void FreeHandleResources(pRODBCHandle thisHandle){
  * @param data data.frame-like structure with query data (columns refer
  *   to query parameters, rows to query executions)
  * @param row number of row in data to copy values from
- * @param vtest debug level: 0-no debug, other-verbose
  */
 void CopyParameters(COLUMNS *columns, SEXP data, int row){
   const char *cData;
@@ -126,7 +125,7 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
   /* Check the number of Query parameters */
   res = SQLNumParams(thisHandle->hStmt, &nparams);
   SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLNumParams failed"), res);
-  if(nparams > 0 && nparams != LENGTH(data)){
+  if(nparams != LENGTH(data)){
   	SQL_RESULT_CHECK(
       SQL_ERROR, 
       thisHandle, 
@@ -134,7 +133,7 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
       res
     );
   }
-  
+
   cachenbind_free(thisHandle);
   thisHandle->ColData = Calloc(nparams, COLUMNS);
   thisHandle->nAllocated = nparams;

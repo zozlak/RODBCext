@@ -1,3 +1,10 @@
+Changes in RODBCext 0.2.6 (2016-07-11)
+
+  * Number of parameters passed to sqlExecute() is now strictly checked against
+    number of parameters specified in the query which avoids segfaults when
+    provided data have to many columns 
+    (https://github.com/zozlak/RODBCext/issues/3)
+
 Changes in RODBCext 0.2.5 (2015-06-30)
 
   * force_loop=FALSE parameter added to sqlExecute() as a workaround for 
