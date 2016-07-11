@@ -12,7 +12,8 @@ Depends:
     R (>= 3.0.0),
     RODBC (>= 1.3.0)
 Suggests:
-    knitr
+    knitr,
+    rmarkdown
 LazyLoad: yes
 Biarch: yes
 License: GPL-2 | GPL-3
