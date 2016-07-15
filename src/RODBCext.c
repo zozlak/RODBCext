@@ -16,6 +16,7 @@
  */
 
 #include "RODBC.h"
+#include "RODBCext.h"
 
 /* macro to check and handle ODBC API calls results */
 #define SQL_RESULT_CHECK(res, handle, errorMessage, ret) \
@@ -83,12 +84,18 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
         break;
       default:
         cData = translateChar(STRING_ELT(VECTOR_ELT(data, col), row));
+        size_t len = strlen(cData);
+        if(len > column->ColSize){
+          free(column->pData);
+          column->pData = Calloc(len + 1, char);
+          if(column->pData == NULL){
+            error(_("failed to allocate buffer of length %d"), len + 1);
+            return;
+          }
+          column->ColSize = len + 1;
+        }
         strncpy(column->pData, cData, column->ColSize);
         column->pData[column->ColSize] = '\0';
-        if(strlen(cData) > column->ColSize){
-          warning(_("character data '%s' truncated to %d bytes in parameter %d"),
-            cData, column->ColSize, col + 1);
-        }
         if(STRING_ELT(VECTOR_ELT(data, col), row) == NA_STRING){
             column->IndPtr[0] = SQL_NULL_DATA;
         }else{
@@ -155,8 +162,8 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
           column->DataType = SQL_INTEGER;
           break;
         default:
-          column->DataType = SQL_VARCHAR;
-          column->ColSize = COLMAX;
+          column->DataType = SQL_LONGVARCHAR;
+          column->ColSize = DEFAULT_BUFF_SIZE;
           break;
       }
     }
