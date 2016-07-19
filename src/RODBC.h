@@ -101,6 +101,7 @@ typedef struct cols {
     SQLSMALLINT  NameLength;
     SQLSMALLINT  DataType;
     SQLULEN  ColSize;
+    SQLULEN  BuffSize;
     SQLSMALLINT  DecimalDigits;
     SQLSMALLINT  Nullable;
     char  *pData;

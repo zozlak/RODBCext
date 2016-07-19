@@ -42,6 +42,56 @@ void FreeHandleResources(pRODBCHandle thisHandle){
 }
 
 /**
+ * Binds (or rebinds) character parameters (char/nchar/etc.)
+ *
+ * It is a separate function as for long character columns some drivers
+ * (e.g. Ms SQL Server driver) report column length 0 making impossible
+ * to allocate the buffer in advance (by the way it is no so stupid
+ * behaviour as reporting maximum column length of about 2 GB, which is 
+ * the case for modern databases, will be useless as well as we will not
+ * allocate buffer of such size in advance). Thus the buffer must be
+ * allocated with some default size but when during parameter values
+ * copying a longer value is encountered, the bufer has to be reallocated
+ * and then rebinded using SQLBindParameter().
+ *
+ * @param thisHandle ODBC handle structure with already prepared query
+ * @param colNo column to (re)bind index
+ * @retval 0 on success, error code on error
+ */
+SQLRETURN BindStringParameter(pRODBCHandle thisHandle, SQLSMALLINT colNo){
+  void *pDataBak = NULL;
+  SQLRETURN res = 0;
+  COLUMNS *column = &(thisHandle->ColData[colNo]);
+
+  /* can be released only after new call to SQLBindParameters() */
+  if(column->pData){
+    pDataBak = column->pData;
+  }
+  
+  column->pData = Calloc(column->BuffSize + 1, char);
+  if(column->pData == 0){
+    return ODBC_ERROR_OUT_OF_MEM;
+  }
+
+  res = SQLBindParameter(
+    thisHandle->hStmt,
+    colNo + 1, SQL_PARAM_INPUT, SQL_C_CHAR,
+    column->DataType,
+    column->ColSize,
+    column->DecimalDigits,
+    column->pData,
+    0,
+    column->IndPtr
+  );
+    
+  if(pDataBak){
+    Free(pDataBak);
+  }
+    
+  return res;
+}
+
+/**
  * Copy parameter values from R data structures to cols data structure
  * taking care of NA, too long character strings, etc.
  *
@@ -50,20 +100,22 @@ void FreeHandleResources(pRODBCHandle thisHandle){
  * (with columns as list) to a single list of columns for every row before
  * each call to CopyParameters.
  *
- * @param columns pointer to a table of cols structures describing query 
- *   parameters
+ * @param thisHandle ODBC handle structure with already prepared query
+ *   and binded parameters
  * @param data data.frame-like structure with query data (columns refer
  *   to query parameters, rows to query executions)
  * @param row number of row in data to copy values from
+ * @retval 0 on success, error code on error
  */
-void CopyParameters(COLUMNS *columns, SEXP data, int row){
+SQLRETURN CopyParameters(pRODBCHandle thisHandle, SEXP data, int row){
   const char *cData;
+  SQLRETURN res = 0;
   int ncol = LENGTH(data);
   if(ncol == NA_INTEGER){
-    return;
+    return 1;
   }
   for(int col = 0; col < ncol; col++) {
-    COLUMNS *column = &(columns[col]);
+    COLUMNS *column = &(thisHandle->ColData[col]);
 
     switch(TYPEOF(VECTOR_ELT(data, col))) { 
       case REALSXP:
@@ -85,17 +137,17 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
       default:
         cData = translateChar(STRING_ELT(VECTOR_ELT(data, col), row));
         size_t len = strlen(cData);
-        if(len > column->ColSize){
-          free(column->pData);
-          column->pData = Calloc(len + 1, char);
-          if(column->pData == NULL){
-            error(_("failed to allocate buffer of length %d"), len + 1);
-            return;
+        if(len > column->BuffSize){
+          if(column->ColSize == 0){
+            column->BuffSize = len + 1;
+            res = BindStringParameter(thisHandle, col);
+            SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLBindParameter failed"), res);
+          }else{
+            warning(_("Value truncated to database columns size (%d)"), column->ColSize);
           }
-          column->ColSize = len + 1;
         }
-        strncpy(column->pData, cData, column->ColSize);
-        column->pData[column->ColSize] = '\0';
+        strncpy(column->pData, cData, column->BuffSize);
+        column->pData[len] = '\0';
         if(STRING_ELT(VECTOR_ELT(data, col), row) == NA_STRING){
             column->IndPtr[0] = SQL_NULL_DATA;
         }else{
@@ -104,8 +156,9 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
         break;
     }
   }
+  return res;
 }
-
+  
 /**
  * Fill cols data structure with parameters info and bind
  * query parameters to cols data fields.
@@ -119,11 +172,7 @@ void CopyParameters(COLUMNS *columns, SEXP data, int row){
  * @param data data.frame-like structure with query data (columns refer
  *   to query parameters, rows to query executions) - used to determine
  *   query params C types
- * @param vtest debug level: 
- *   0-no debug, 
- *   1-verbose, 
- *   2-verbose with no query execution
- * @retval 1 on success, -1 on error
+ * @retval 0 on success, error code on error
  */
 SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
   SQLRETURN res = 0;
@@ -195,25 +244,13 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
         );
         break;
       default:
-        if(column->pData){
-          Free(column->pData);
-        }
-        column->pData = Calloc(column->ColSize + 1, char);
-        res = SQLBindParameter(
-          thisHandle->hStmt,
-          col + 1, SQL_PARAM_INPUT, SQL_C_CHAR,
-          column->DataType,
-          column->ColSize,
-          column->DecimalDigits,
-          column->pData,
-          0,
-          column->IndPtr
-        );
+        column->BuffSize = column->ColSize ? column->ColSize : DEFAULT_BUFF_SIZE;
+        res = BindStringParameter(thisHandle, col);
         break;
     }
     SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLBindParameter failed"), res);
   }
-  return 1;
+  return 0;
 }
 
 /**
@@ -306,7 +343,7 @@ SEXP RODBCExecute(SEXP chan, SEXP data, SEXP nrows)
   
   /* Bind Query parameters  */
   res = BindParameters(thisHandle, data);
-  if(res != 1){
+  if(res != 0){
     return ScalarInteger(-1);
   }
 
@@ -320,8 +357,11 @@ SEXP RODBCExecute(SEXP chan, SEXP data, SEXP nrows)
       /* Discard any pending data from previous query executions */
       SQLCloseCursor(thisHandle->hStmt);
 
-      CopyParameters(thisHandle->ColData, data, row);
-  
+      res = CopyParameters(thisHandle, data, row);
+      if(res != 0){
+        return ScalarInteger(-1);
+      }
+
       res = SQLExecute(thisHandle->hStmt);
       SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLExecute failed"), ScalarInteger(-1));
     }

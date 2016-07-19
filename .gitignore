@@ -1,6 +1,7 @@
 RODBC.Rproj
 src/*.o
 src/*.so
+src/*.dll
 src/Makevars
 src/config.h
 build/*
