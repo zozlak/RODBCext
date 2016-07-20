@@ -279,13 +279,20 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
       case SQL_LONGVARBINARY:
       {
         /* should really use SQLCHAR (unsigned) */
-        column->pData = Calloc(nRows * (column->datalen + 1), char);
-        BIND(SQL_C_BINARY, pData, column->datalen);
+        SQLLEN datalen = thisHandle->ColData[i].ColSize;
+        thisHandle->ColData[i].datalen = datalen;
+        thisHandle->ColData[i].pData = Calloc(nRows * (datalen + 1), char);
+        BIND(SQL_C_BINARY, pData, datalen);
       }
       default:
       {
-        column->pData = Calloc(nRows * (column->datalen + 1), char);
-        BIND(SQL_C_CHAR, pData, column->ColSize);
+        SQLLEN datalen = thisHandle->ColData[i].ColSize;
+        if (datalen <= 0 || datalen < COLMAX) datalen = COLMAX;
+        /* sanity check as the reports are sometimes unreliable */
+        if (datalen > 65535) datalen = 65535;
+        thisHandle->ColData[i].pData = Calloc(nRows * (datalen + 1), char);
+        thisHandle->ColData[i].datalen = datalen;
+        BIND(SQL_C_CHAR, pData, datalen);
       }
     }
 
