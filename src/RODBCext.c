@@ -1,5 +1,5 @@
 /*
- *  copyright (C) 2014 Mateusz Zoltak
+ *  copyright (C) 2014-2016 Mateusz Zoltak
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ SQLRETURN BindStringParameter(pRODBCHandle thisHandle, SQLSMALLINT colNo){
     pDataBak = column->pData;
   }
   
-  column->pData = Calloc(column->BuffSize + 1, char);
+  column->pData = Calloc(column->datalen + 1, char);
   if(column->pData == 0){
     return ODBC_ERROR_OUT_OF_MEM;
   }
@@ -137,16 +137,17 @@ SQLRETURN CopyParameters(pRODBCHandle thisHandle, SEXP data, int row){
       default:
         cData = translateChar(STRING_ELT(VECTOR_ELT(data, col), row));
         size_t len = strlen(cData);
-        if(len > column->BuffSize){
+        if(len > column->datalen){
           if(column->ColSize == 0){
-            column->BuffSize = len + 1;
+            column->datalen = len + 1;
             res = BindStringParameter(thisHandle, col);
             SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLBindParameter failed"), res);
           }else{
             warning(_("Value truncated to database columns size (%d)"), column->ColSize);
+            len = column->ColSize;
           }
         }
-        strncpy(column->pData, cData, column->BuffSize);
+        strncpy(column->pData, cData, len);
         column->pData[len] = '\0';
         if(STRING_ELT(VECTOR_ELT(data, col), row) == NA_STRING){
             column->IndPtr[0] = SQL_NULL_DATA;
@@ -182,12 +183,9 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
   res = SQLNumParams(thisHandle->hStmt, &nparams);
   SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLNumParams failed"), res);
   if(nparams != LENGTH(data)){
-  	SQL_RESULT_CHECK(
-      SQL_ERROR, 
-      thisHandle, 
-      _("[RODBCext] Error: Number of parameters in query do not match number of columns in data"), 
-      res
-    );
+    error(_("Number of parameters does not match number of columns in provided data"));
+    FreeHandleResources(thisHandle);
+    return 100;
   }
 
   cachenbind_free(thisHandle);
@@ -244,7 +242,7 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
         );
         break;
       default:
-        column->BuffSize = column->ColSize ? column->ColSize : DEFAULT_BUFF_SIZE;
+        column->datalen = column->ColSize ? column->ColSize : DEFAULT_BUFF_SIZE;
         res = BindStringParameter(thisHandle, col);
         break;
     }

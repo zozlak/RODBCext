@@ -1,6 +1,6 @@
 /*
  *  RODDCext/src/RODBC.c by M. Lapsley, B. D. Ripley and Mateusz Zoltak
- *    Copyright (C) 1999-2014
+ *    Copyright (C) 1999-2016
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,12 +20,18 @@
  */
 
 #include "RODBC.h"
+#include "RODBCext.h"
 
 #define BIND(type, buf, size) \
-      retval = SQLBindCol(thisHandle->hStmt, i+1, type,\
-        thisHandle->ColData[i].buf, size,\
-        thisHandle->ColData[i].IndPtr);\
-            break;
+  retval = SQLBindCol(\
+    thisHandle->hStmt,\
+    i + 1,\
+    type,\
+    column->buf,\
+    size,\
+    column->IndPtr\
+  );\
+  break;
 
 /**********************
  * Check for valid channel since invalid
@@ -37,9 +43,12 @@ SEXP RODBCcheckchannel(SEXP chan, SEXP id)
     SEXP ptr = getAttrib(chan, install("handle_ptr"));
     pRODBCHandle thisHandle = R_ExternalPtrAddr(ptr);
 
-    return ScalarLogical(thisHandle && TYPEOF(ptr) == EXTPTRSXP &&
-  		 thisHandle->channel == asInteger(chan) &&
-			 thisHandle->id == asInteger(id));
+    return ScalarLogical(
+      thisHandle && 
+      TYPEOF(ptr) == EXTPTRSXP &&
+  		thisHandle->channel == asInteger(chan) &&
+			thisHandle->id == asInteger(id)
+    );
 }
 
 /**********************************************************
@@ -147,8 +156,9 @@ void cachenbind_free(pRODBCHandle thisHandle)
   SQLUSMALLINT i;
   if(thisHandle->ColData) {
     for (i = 0; i < thisHandle->nAllocated; i++){
-      if(thisHandle->ColData[i].pData)
+      if(thisHandle->ColData[i].pData){
         Free(thisHandle->ColData[i].pData);
+      }
     }
     Free(thisHandle->ColData);
     thisHandle->ColData = NULL; /* to be sure */
@@ -188,42 +198,64 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
      But here double casting works because long and a pointer
      are the same size on all relevant platforms (since
      Win64 is not relevant). */
-  retval = SQLSetStmtAttr(thisHandle->hStmt, SQL_ATTR_ROW_ARRAY_SIZE,
-           (SQLPOINTER) (unsigned long) thisHandle->rowArraySize, 0 );
-  if (retval != SQL_SUCCESS)
+  retval = SQLSetStmtAttr(
+    thisHandle->hStmt, 
+    SQL_ATTR_ROW_ARRAY_SIZE,
+    (SQLPOINTER) (unsigned long) thisHandle->rowArraySize, 
+    0 
+  );
+  if (retval != SQL_SUCCESS){
     thisHandle->rowArraySize = 1;
+  }
   
   thisHandle->rowsUsed = 0;
 
   /* Set pointer to report number of rows fetched */
 
   if (thisHandle->rowArraySize != 1) {
-    retval = SQLSetStmtAttr(thisHandle->hStmt,
-             SQL_ATTR_ROWS_FETCHED_PTR,
-             &thisHandle->rowsFetched, 0);
+    retval = SQLSetStmtAttr(
+      thisHandle->hStmt,
+      SQL_ATTR_ROWS_FETCHED_PTR,
+      &thisHandle->rowsFetched, 
+      0
+    );
     if (retval != SQL_SUCCESS) {
       thisHandle->rowArraySize = 1;
-      SQLSetStmtAttr(thisHandle->hStmt, SQL_ATTR_ROW_ARRAY_SIZE,
-         (SQLPOINTER) 1, 0 );
+      SQLSetStmtAttr(
+        thisHandle->hStmt, 
+        SQL_ATTR_ROW_ARRAY_SIZE,
+        (SQLPOINTER) 1, 
+        0 
+      );
     }
   }
   nRows = thisHandle->rowArraySize;
 
   /* step through each col and cache metadata: cols are numbered from 1! */
   for (i = 0; i < NCOLS; i++) {
-    retval = SQLDescribeCol(thisHandle->hStmt, i+1,
-        thisHandle->ColData[i].ColName, 256,
-        &thisHandle->ColData[i].NameLength,
-        &thisHandle->ColData[i].DataType,
-        &thisHandle->ColData[i].ColSize,
-        &thisHandle->ColData[i].DecimalDigits,
-        &thisHandle->ColData[i].Nullable);
+    COLUMNS *column = &(thisHandle->ColData[i]);
+    retval = SQLDescribeCol(
+      thisHandle->hStmt, 
+      i+1,
+      column->ColName, 
+      256,
+      &column->NameLength,
+      &column->DataType,
+      &column->ColSize,
+      &column->DecimalDigits,
+      &column->Nullable
+    );
     if( retval != SQL_SUCCESS && retval != SQL_SUCCESS_WITH_INFO ) {
       geterr(thisHandle);
-      errlistAppend(thisHandle, 
-        _("[RODBC] ERROR: SQLDescribeCol failed"));
+      errlistAppend(
+        thisHandle, 
+        _("[RODBC] ERROR: SQLDescribeCol failed")
+      );
       goto error;
     }
+    
+    column->datalen = column->ColSize ? column->ColSize : DEFAULT_BUFF_SIZE;
+    
     /* now bind the col to its data buffer */
     /* MSDN say the BufferLength is ignored for fixed-size
        types, but this is not so for UnixODBC */
@@ -233,7 +265,7 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
        SQL_C_BIT
        SQL_C_WCHAR (map to UTF-8)
      */
-    switch(thisHandle->ColData[i].DataType) {
+    switch(column->DataType) {
       case SQL_DOUBLE:
         BIND(SQL_C_DOUBLE, RData, sizeof(double));
       case SQL_REAL:
@@ -247,33 +279,23 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
       case SQL_LONGVARBINARY:
       {
         /* should really use SQLCHAR (unsigned) */
-        SQLLEN datalen = thisHandle->ColData[i].ColSize;
-        thisHandle->ColData[i].datalen = datalen;
-        thisHandle->ColData[i].pData =
-          Calloc(nRows * (datalen + 1), char);
-        BIND(SQL_C_BINARY, pData, datalen);
+        column->pData = Calloc(nRows * (column->datalen + 1), char);
+        BIND(SQL_C_BINARY, pData, column->datalen);
       }
       default:
       {
-        SQLLEN datalen = thisHandle->ColData[i].ColSize;
-        if (datalen <= 0 || datalen < COLMAX)
-          datalen = COLMAX;
-        /* sanity check as the reports are sometimes unreliable */
-        if (datalen > 65535)
-          datalen = 65535;
-        thisHandle->ColData[i].pData =
-          Calloc(nRows * (datalen + 1), char);
-        thisHandle->ColData[i].datalen = datalen;
-        BIND(SQL_C_CHAR, pData, datalen);
+        column->pData = Calloc(nRows * (column->datalen + 1), char);
+        BIND(SQL_C_CHAR, pData, column->ColSize);
       }
     }
 
     if( retval != SQL_SUCCESS && retval != SQL_SUCCESS_WITH_INFO ) {
-      geterr(thisHandle);
-      errlistAppend(thisHandle, _("[RODBC] ERROR: SQLBindCol failed"));
-      goto error;
+        geterr(thisHandle);
+        errlistAppend(thisHandle, _("[RODBC] ERROR: SQLBindCol failed"));
+        goto error;
     }
   }
+
   return 1;
 
 error:

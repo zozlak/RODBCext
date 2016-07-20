@@ -101,11 +101,10 @@ typedef struct cols {
     SQLSMALLINT  NameLength;
     SQLSMALLINT  DataType;
     SQLULEN  ColSize;
-    SQLULEN  BuffSize;
     SQLSMALLINT  DecimalDigits;
     SQLSMALLINT  Nullable;
     char  *pData;
-    int    datalen;
+    int datalen;
     SQLDOUBLE  RData [MAX_ROWS_FETCH];
     SQLREAL  R4Data[MAX_ROWS_FETCH];
     SQLINTEGER  IData [MAX_ROWS_FETCH];
