@@ -2,8 +2,9 @@ Package: RODBCext
 Version: 0.2.7
 Authors@R: c(person("Mateusz", "Zoltak", role = c("aut", "cre"),
     email = "zozlak@zozlak.org"),
-    person("Brian", "Ripley", role = c("aut")),
-    person("Michael", "Lapsley", role = "aut"))
+    person("Brian", "Ripley", role = "aut"),
+    person("Michael", "Lapsley", role = "aut"),
+    person("Will", "Beasley", role = "ctb"))
 Title: Parameterized Queries Extension for RODBC
 Description: An extension for RODBC package adding support for parameterized
     queries.
