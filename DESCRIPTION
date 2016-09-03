@@ -4,7 +4,8 @@ Authors@R: c(person("Mateusz", "Zoltak", role = c("aut", "cre"),
     email = "zozlak@zozlak.org"),
     person("Brian", "Ripley", role = "aut"),
     person("Michael", "Lapsley", role = "aut"),
-    person("Will", "Beasley", role = "ctb"))
+    person("Will", "Beasley", role = "ctb",
+    email = "wibeasley@hotmail.com"))
 Title: Parameterized Queries Extension for RODBC
 Description: An extension for RODBC package adding support for parameterized
     queries.
@@ -20,7 +21,8 @@ Biarch: yes
 License: GPL-2 | GPL-3
 Author: Mateusz Zoltak [aut, cre],
     Brian Ripley [aut],
-    Michael Lapsley [aut]
+    Michael Lapsley [aut],
+    Will Beasley [ctb]
 Maintainer: Mateusz Zoltak <zozlak@zozlak.org>
 NeedsCompilation: yes
 VignetteBuilder: knitr
