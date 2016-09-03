@@ -146,7 +146,7 @@ sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE,
 
   # For each row of query parameters execute the query and fetch results
   results = NULL
-  for(row in 1:nrow(data)){
+  for(row in seq_len(nrow(data))){
     stat <- .Call(
       "RODBCExecute", 
       attr(channel, "handle_ptr"), 
