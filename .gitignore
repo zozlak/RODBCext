@@ -9,3 +9,4 @@ build/*
 .Rhistory
 config.log
 config.status
+revdep

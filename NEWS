@@ -1,8 +1,20 @@
+Changes in RODBCext 0.2.7 (2016-09-17)
+
+  * Added support for column types reporting 0 as its length (most notably
+    Ms SQL Server's "varchar(max)" column type).
+    * When passing data from R into a database, data of any size are 
+      supported (the available memory for ODBC buffers is the only limit).
+    * When reading data from database into R a default RODBC's buffer length
+      of 255 characters is used to assure compatibility with RODBC (RODBCext 
+      relies on RODBC functions on data retrieval).
+      This means strings of type "varchar(max)" will be truncated to 255
+      charactes.
+
 Changes in RODBCext 0.2.6 (2016-07-11)
 
   * Number of parameters passed to sqlExecute() is now strictly checked against
-    number of parameters specified in the query which avoids segfaults when
-    provided data have to many columns 
+    number of parameters specified in the query. It avoids segfaults when
+    provided data have to many columns
     (https://github.com/zozlak/RODBCext/issues/3)
 
 Changes in RODBCext 0.2.5 (2015-06-30)
