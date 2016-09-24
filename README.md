@@ -27,7 +27,7 @@ install.packages('RODBCext')
 If you encounter problems during installation on a Linux, please check if [this applies to you](https://github.com/hadley/devtools/issues/650) or switch to other installation method.
 
 1) Obtain recent gcc, g++, and gfortran compilers. Windows users can install the
-   [Rtools](http://cran.r-project.org/bin/windows/Rtools/) suite while Mac users will have to
+   [Rtools](https://CRAN.R-project.org/bin/windows/Rtools/) suite while Mac users will have to
    download the necessary tools from the [Xcode](https://itunes.apple.com/ca/app/xcode/id497799835?mt=12) suite and its
    related command line tools (found within Xcode's Preference Pane under Downloads/Components); 
    most Linux distributions should already have up to date compilers (or if not they can be updated easily). 
