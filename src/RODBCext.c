@@ -371,6 +371,73 @@ SEXP RODBCExecute(SEXP chan, SEXP data, SEXP nrows)
   return ScalarInteger(stat);
 }
 
+  
+  
+/**
+ * Get the current query timeout of a prepared query.
+ * 
+ * A query has to be already prepared using SQLPrepare()
+ * 
+ * @param chan an R ODBC handle containing an open connection
+ *
+ * @retval The current query timeout value in seconds. 0 means "no timeout". -1 means error
+ *
+ */
+SEXP RODBCGetQueryTimeout(SEXP chan)
+{
+  pRODBCHandle thisHandle = R_ExternalPtrAddr(chan);
+  SQLRETURN res = 0;
+  SQLUINTEGER	value;		// Unsigned int attribute values
+  
+  if( thisHandle->hStmt == NULL )
+    error(_("[RODBCext] Error: GetQueryTimeout failed (the statement handle is NULL)"));
+    
+  // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetstmtattr-function
+  res = SQLGetStmtAttr(thisHandle->hStmt,
+                       SQL_ATTR_QUERY_TIMEOUT,
+                       (SQLPOINTER) &value,
+                       (SQLINTEGER) sizeof(value),
+                       NULL);
+  
+  SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: GetQueryTimeout failed"), ScalarInteger(-1));
+  
+  return ScalarInteger(value);
+}
+
+
+  
+/**
+ * Sets the query timeout of a prepared query.
+ * 
+ * A query has to be already prepared using SQLPrepare()
+ * 
+ * @param chan an R ODBC handle containing an open connection
+ * @param timeout the new query timeout value in seconds (0 means "no timeout")
+ *
+ * @retval 0 on success, 1 on success with info, -1 on error
+ */
+SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
+{
+  pRODBCHandle thisHandle = R_ExternalPtrAddr(chan);
+  int iTimeout =  asInteger(timeout);
+  SQLRETURN res = 0;
+
+  if( thisHandle->hStmt == NULL )
+    error(_("[RODBCext] Error: SetQueryTimeout failed (the statement handle is NULL)"));
+
+  // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
+  res = SQLSetStmtAttr(thisHandle->hStmt,
+                       SQL_ATTR_QUERY_TIMEOUT,
+                       (SQLPOINTER) (unsigned long) 33, // iTimeout,
+                       0);
+
+  SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SetQueryTimeout failed"), ScalarInteger(-1));
+  
+  return ScalarInteger(res);
+}
+  
+  
+  
 /*###########################################################################*/
 
 #include <R_ext/Rdynload.h>
@@ -380,6 +447,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"RODBCPrepare", (DL_FUNC) &RODBCPrepare, 2},
     {"RODBCExecute", (DL_FUNC) &RODBCExecute, 3},
     {"RODBCcheckchannel", (DL_FUNC) &RODBCcheckchannel, 2},
+    {"RODBCGetQueryTimeout", (DL_FUNC) &RODBCGetQueryTimeout, 1},
+    {"RODBCSetQueryTimeout", (DL_FUNC) &RODBCSetQueryTimeout, 2},
     {NULL, NULL, 0}
 };
 
