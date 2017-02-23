@@ -389,7 +389,7 @@ SEXP RODBCGetQueryTimeout(SEXP chan)
   SQLRETURN res = 0;
   SQLUINTEGER	value;		// Unsigned int attribute values
   
-  if( thisHandle->hStmt == NULL )
+  if(thisHandle->hStmt == NULL)
     error(_("[RODBCext] Error: 'GetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
     
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetstmtattr-function
@@ -419,11 +419,21 @@ SEXP RODBCGetQueryTimeout(SEXP chan)
 SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
 {
   pRODBCHandle thisHandle = R_ExternalPtrAddr(chan);
-  int iTimeout =  asInteger(timeout);
   SQLRETURN res = 0;
 
-  if( thisHandle->hStmt == NULL )
+  if(!isReal(timeout) && !(IS_INTEGER(timeout))) 
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter has no integer or floating point number value)! It is: %s"), type2char(TYPEOF(timeout)));
+  
+  if(LENGTH(timeout) != 1)
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter is not a single value!). Length: %i"), LENGTH(timeout));
+
+  if(asInteger(timeout) == NA_INTEGER)
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter is NA!)"));
+  
+  if(thisHandle->hStmt == NULL)
     error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
+
+  int iTimeout =  asInteger(timeout);
 
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
   res = SQLSetStmtAttr(thisHandle->hStmt,
