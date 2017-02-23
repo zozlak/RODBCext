@@ -23,9 +23,19 @@
 #'
 #' @return The current query timeout value in seconds. 0 means "no timeout"
 #' 
-#' @description Throws an error if an error occured
+#' @description Throws any error if an error occured
 #' 
 #' @seealso \code{\link{odbcSetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}
+#' 
+#' @examples
+#' \dontrun{
+#'   conn = odbcConnect('MyDataSource')
+#'   
+#'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
+#'   odbcGetQueryTimeout(conn)   # shows the current query timeout of the prepared statement
+#'   sqlExecute(conn, 'myValue')
+#'   sqlFetchMore(conn)
+#' }
 #' 
 #' @export
 odbcGetQueryTimeout <- function(channel)
@@ -56,9 +66,22 @@ odbcGetQueryTimeout <- function(channel)
 #' @return  0 = success,
 #'          1 = success but with an info message,
 #'
-#' @seealso \code{\link{odbcSetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}
+#' @seealso \code{\link{odbcGetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}
 #'
-#' @description Throws an error if an error occured
+#' @description Throws an error if any error occured
+#' 
+#' @note Not all drivers will support a query timeout. You may get an error then
+#'       or the query timeout values remains unchanged silently.
+#' 
+#' @examples
+#' \dontrun{
+#'   conn = odbcConnect('MyDataSource')
+#'   
+#'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
+#'   odbcSetQueryTimeout(conn, 120)   # sets the query timeout of the prepared statement
+#'   sqlExecute(conn, 'myValue')
+#'   sqlFetchMore(conn)
+#' }
 #' 
 #' @export
 odbcSetQueryTimeout <- function(channel, timeout = 30)

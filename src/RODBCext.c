@@ -390,7 +390,7 @@ SEXP RODBCGetQueryTimeout(SEXP chan)
   SQLUINTEGER	value;		// Unsigned int attribute values
   
   if( thisHandle->hStmt == NULL )
-    error(_("[RODBCext] Error: GetQueryTimeout failed (the statement handle is NULL)"));
+    error(_("[RODBCext] Error: 'GetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
     
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetstmtattr-function
   res = SQLGetStmtAttr(thisHandle->hStmt,
@@ -423,7 +423,7 @@ SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
   SQLRETURN res = 0;
 
   if( thisHandle->hStmt == NULL )
-    error(_("[RODBCext] Error: SetQueryTimeout failed (the statement handle is NULL)"));
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
 
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
   res = SQLSetStmtAttr(thisHandle->hStmt,

@@ -13,10 +13,21 @@ odbcGetQueryTimeout(channel)
 The current query timeout value in seconds. 0 means "no timeout"
 }
 \description{
-Throws an error if an error occured
+Throws any error if an error occured
 }
 \details{
 A query has to be already prepared using SQLPrepare()
+}
+\examples{
+\dontrun{
+  conn = odbcConnect('MyDataSource')
+  
+  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
+  odbcGetQueryTimeout(conn)   # shows the current query timeout of the prepared statement
+  sqlExecute(conn, 'myValue')
+  sqlFetchMore(conn)
+}
+
 }
 \seealso{
 \code{\link{odbcSetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}

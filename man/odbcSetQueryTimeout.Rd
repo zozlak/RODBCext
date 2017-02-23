@@ -16,12 +16,27 @@ odbcSetQueryTimeout(channel, timeout = 30)
          1 = success but with an info message,
 }
 \description{
-Throws an error if an error occured
+Throws an error if any error occured
 }
 \details{
 A query has to be already prepared using SQLPrepare()
 }
+\note{
+Not all drivers will support a query timeout. You may get an error then
+      or the query timeout values remains unchanged silently.
+}
+\examples{
+\dontrun{
+  conn = odbcConnect('MyDataSource')
+  
+  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
+  odbcSetQueryTimeout(conn, 120)   # sets the query timeout of the prepared statement
+  sqlExecute(conn, 'myValue')
+  sqlFetchMore(conn)
+}
+
+}
 \seealso{
-\code{\link{odbcSetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}
+\code{\link{odbcGetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}
 }
 
