@@ -435,6 +435,12 @@ SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
 
   int iTimeout =  asInteger(timeout);
 
+  // Note: The 3rd parameter ("ValuePtr") may be an integer as well as
+  //       a pointer to buffers depending on the context of the call
+  //       (passed as 2nd "Attribute" parameter).
+  //       This may cause a warning if pointers and integers do NOT have
+  //       the same length as in 64-bit Windows.
+  //       You can safely ignore this warning.
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
   res = SQLSetStmtAttr(thisHandle->hStmt,
                        SQL_ATTR_QUERY_TIMEOUT,
