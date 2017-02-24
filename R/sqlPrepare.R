@@ -21,6 +21,8 @@
 #' @param channel ODBC connection obtained by \link{odbcConnect}
 #' @param query query string
 #' @param errors whether to display errors
+#' @param query_timeout the query timeout value in seconds
+#'        (0 means "no timeout", NULL does not change the default value)
 #' @return invisible(1) on success, -1 or an error (depending on errors parameter) on error
 #' @export
 #' @examples
@@ -28,16 +30,24 @@
 #'   conn = odbcConnect('MyDataSource')
 #'   
 #'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
-#'   sqlExecute(conn, 'myValue')
+#'   sqlExecute(conn, NULL, 'myValue')
 #'   sqlFetchMore(conn)
+#'   
+#'   # with a query timeout
+#'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", query_timeout=60)
+#'   sqlExecute(conn, data='myValue', fetch=TRUE)
 #' }
-sqlPrepare <- function(channel, query, errors = TRUE)
+sqlPrepare <- function(channel, query, errors = TRUE, query_timeout=NULL)
 {
   if(!odbcValidChannel(channel)){
     stop("first argument is not an open RODBC channel")
   }
   if(missing(query)){
     stop("missing argument 'query'")
+  }
+  
+  if(!is.null(query_timeout)){
+    stopifnot(is.numeric(query_timeout), length(query_timeout) == 1)
   }
   
   if(nchar(enc <- attr(channel, "encoding"))){
@@ -54,6 +64,12 @@ sqlPrepare <- function(channel, query, errors = TRUE)
       return(stat)
     }
   }
+  
   attr(channel, 'query') = query
+  
+  # Set the query timeout
+  if(!is.null(query_timeout))
+    odbcSetQueryTimeout(channel, query_timeout)
+
   return(invisible(stat))
 }

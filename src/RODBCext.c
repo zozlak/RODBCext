@@ -438,7 +438,7 @@ SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
   res = SQLSetStmtAttr(thisHandle->hStmt,
                        SQL_ATTR_QUERY_TIMEOUT,
-                       (SQLPOINTER) (unsigned long) 33, // iTimeout,
+                       (SQLPOINTER) (unsigned long) iTimeout,
                        0);
 
   SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SetQueryTimeout failed"), ScalarInteger(-1));

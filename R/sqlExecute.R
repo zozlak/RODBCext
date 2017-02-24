@@ -42,6 +42,8 @@
 #' @param force_loop whether to execute queries in the explicit loop with 
 #'   separate query planing for each iteration (usefull if executing a query 
 #'   invalidates its plan, e.g. EXEC queries on Ms SQL Server)
+#' @param query_timeout the query timeout value in seconds
+#'        (0 means "no timeout", NULL does not change the default value)
 #' @param ... parameters to pass to \link[RODBC]{sqlGetResults} (if fetch=TRUE)
 #' @return see datails
 #' @export
@@ -69,9 +71,16 @@
 #'     TRUE, 
 #'     stringsAsFactors=FALSE
 #'   )
+#'   
+#'   # prepare, execute and fetch at one time using a query timeout value
+#'   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, query_timeout=45)
+#'   
+#'   # execute a simple statement without parameters using a query timeout value
+#'   sqlExecute(con, "SELECT * FROM myTable", fetch = TRUE, query_timeout = 60)
 #' }
-sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE, rows_at_time=attr(channel, "rows_at_time"), force_loop=FALSE, ...)
+sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE, rows_at_time=attr(channel, "rows_at_time"), force_loop=FALSE, query_timeout=NULL, ...)
 {
+  # Check preconditions
   stopifnot(
     odbcValidChannel(channel),
     is.vector(fetch), is.logical(fetch), length(fetch) == 1, all(!is.na(fetch)),
@@ -79,11 +88,16 @@ sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE,
     is.vector(rows_at_time), is.numeric(rows_at_time), length(rows_at_time) == 1, all(!is.na(rows_at_time)),
     is.vector(force_loop), is.logical(force_loop), length(force_loop) == 1, all(!is.na(force_loop))
   )
+
+  if(!is.null(query_timeout)){
+    stopifnot(is.numeric(query_timeout), length(query_timeout) == 1)
+  }
+  
   if(!odbcValidChannel(channel)){
     stop("first argument is not an open RODBC channel")
   }
   
-  # workaround for queries wchich has to be planned before each execution
+  # workaround for queries which have to be planned before each execution
   if(force_loop){
     data = as.data.frame(data)
     stopifnot(
@@ -101,10 +115,14 @@ sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE,
   if(!is.null(query)){
     stat <- sqlPrepare(channel, query, errors)
     if(stat == -1L){
-      return(stat); # there is no need to check if error should be thrown - this is being done by sqlPrepare()
+      return(stat)   # there is no need to check if error should be thrown - this is being done by sqlPrepare()
     }
   }
-  
+
+  # Set the query timeout
+  if(!is.null(query_timeout))
+    odbcSetQueryTimeout(channel, query_timeout)
+    
   # Prepare data
   data = as.data.frame(data)
   for(k in seq_along(data)){
