@@ -371,6 +371,89 @@ SEXP RODBCExecute(SEXP chan, SEXP data, SEXP nrows)
   return ScalarInteger(stat);
 }
 
+  
+  
+/**
+ * Get the current query timeout of a prepared query.
+ * 
+ * A query has to be already prepared using SQLPrepare()
+ * 
+ * @param chan an R ODBC handle containing an open connection
+ *
+ * @retval The current query timeout value in seconds. 0 means "no timeout". -1 means error
+ *
+ */
+SEXP RODBCGetQueryTimeout(SEXP chan)
+{
+  pRODBCHandle thisHandle = R_ExternalPtrAddr(chan);
+  SQLRETURN res = 0;
+  SQLUINTEGER	value;		// Unsigned int attribute values
+  
+  if(thisHandle->hStmt == NULL)
+    error(_("[RODBCext] Error: 'GetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
+    
+  // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetstmtattr-function
+  res = SQLGetStmtAttr(thisHandle->hStmt,
+                       SQL_ATTR_QUERY_TIMEOUT,
+                       (SQLPOINTER) &value,
+                       (SQLINTEGER) sizeof(value),
+                       NULL);
+  
+  SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: GetQueryTimeout failed"), ScalarInteger(-1));
+  
+  return ScalarInteger(value);
+}
+
+
+  
+/**
+ * Sets the query timeout of a prepared query.
+ * 
+ * A query has to be already prepared using SQLPrepare()
+ * 
+ * @param chan an R ODBC handle containing an open connection
+ * @param timeout the new query timeout value in seconds (0 means "no timeout")
+ *
+ * @retval 0 on success, 1 on success with info, -1 on error
+ */
+SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
+{
+  pRODBCHandle thisHandle = R_ExternalPtrAddr(chan);
+  SQLRETURN res = 0;
+
+  if(!isReal(timeout) && !(IS_INTEGER(timeout))) 
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter has no integer or floating point number value)! It is: %s"), type2char(TYPEOF(timeout)));
+  
+  if(LENGTH(timeout) != 1)
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter is not a single value!). Length: %i"), LENGTH(timeout));
+
+  if(asInteger(timeout) == NA_INTEGER)
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter is NA!)"));
+  
+  if(thisHandle->hStmt == NULL)
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
+
+  int iTimeout =  asInteger(timeout);
+
+  // Note: The 3rd parameter ("ValuePtr") may be an integer as well as
+  //       a pointer to buffers depending on the context of the call
+  //       (passed as 2nd "Attribute" parameter).
+  //       This may cause a warning ("cast to pointer from integer of different size [-Wint-to-pointer-cast]")
+  //       if pointers and integers do NOT have the same length as in 64-bit Windows.
+  //       You can safely ignore this warning.
+  // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
+  res = SQLSetStmtAttr(thisHandle->hStmt,
+                       SQL_ATTR_QUERY_TIMEOUT,
+                       (SQLPOINTER) (unsigned long) iTimeout,
+                       0);
+
+  SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SetQueryTimeout failed"), ScalarInteger(-1));
+  
+  return ScalarInteger(res);
+}
+  
+  
+  
 /*###########################################################################*/
 
 #include <R_ext/Rdynload.h>
@@ -380,6 +463,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"RODBCPrepare", (DL_FUNC) &RODBCPrepare, 2},
     {"RODBCExecute", (DL_FUNC) &RODBCExecute, 3},
     {"RODBCcheckchannel", (DL_FUNC) &RODBCcheckchannel, 2},
+    {"RODBCGetQueryTimeout", (DL_FUNC) &RODBCGetQueryTimeout, 1},
+    {"RODBCSetQueryTimeout", (DL_FUNC) &RODBCSetQueryTimeout, 2},
     {NULL, NULL, 0}
 };
 

@@ -4,7 +4,7 @@
 \alias{sqlPrepare}
 \title{Prepares a query for execution}
 \usage{
-sqlPrepare(channel, query, errors = TRUE)
+sqlPrepare(channel, query, errors = TRUE, query_timeout = NULL)
 }
 \arguments{
 \item{channel}{ODBC connection obtained by \link{odbcConnect}}
@@ -12,6 +12,9 @@ sqlPrepare(channel, query, errors = TRUE)
 \item{query}{query string}
 
 \item{errors}{whether to display errors}
+
+\item{query_timeout}{the query timeout value in seconds
+(0 means "no timeout", NULL does not change the default value)}
 }
 \value{
 invisible(1) on success, -1 or an error (depending on errors parameter) on error
@@ -24,8 +27,12 @@ Prepares a query for execution.
   conn = odbcConnect('MyDataSource')
   
   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
-  sqlExecute(conn, 'myValue')
+  sqlExecute(conn, NULL, 'myValue')
   sqlFetchMore(conn)
+  
+  # with a query timeout
+  sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?", query_timeout=60)
+  sqlExecute(conn, data='myValue', fetch=TRUE)
 }
 }
 

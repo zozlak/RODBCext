@@ -6,7 +6,7 @@
 \usage{
 sqlExecute(channel, query = NULL, data = NULL, fetch = FALSE,
   errors = TRUE, rows_at_time = attr(channel, "rows_at_time"),
-  force_loop = FALSE, ...)
+  force_loop = FALSE, query_timeout = NULL, ...)
 }
 \arguments{
 \item{channel}{ODBC connection obtained by \link[RODBC]{odbcConnect}}
@@ -26,6 +26,9 @@ sqlExecute(channel, query = NULL, data = NULL, fetch = FALSE,
 \item{force_loop}{whether to execute queries in the explicit loop with 
 separate query planing for each iteration (usefull if executing a query 
 invalidates its plan, e.g. EXEC queries on Ms SQL Server)}
+
+\item{query_timeout}{the query timeout value in seconds
+(0 means "no timeout", NULL does not change the default value)}
 
 \item{...}{parameters to pass to \link[RODBC]{sqlGetResults} (if fetch=TRUE)}
 }
@@ -73,6 +76,12 @@ Return value depends on the combination of parameters:
     TRUE, 
     stringsAsFactors=FALSE
   )
+  
+  # prepare, execute and fetch at one time using a query timeout value
+  sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE, query_timeout=45)
+  
+  # execute a simple statement without parameters using a query timeout value
+  sqlExecute(con, "SELECT * FROM myTable", fetch = TRUE, query_timeout = 60)
 }
 }
 
