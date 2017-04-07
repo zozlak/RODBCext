@@ -9,6 +9,7 @@ Authors@R: c(person("Mateusz", "Zoltak", role = c("aut", "cre"),
 Title: Parameterized Queries Extension for RODBC
 Description: An extension for RODBC package adding support for parameterized
     queries.
+URL: https://github.com/zozlak/RODBCext
 SystemRequirements: An ODBC3 driver manager and drivers.
 Depends:
     R (>= 3.0.0),
