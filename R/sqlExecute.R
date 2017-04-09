@@ -108,7 +108,7 @@ sqlExecute = function(
     )
     results = list()
     for (i in seq_along(data[, 1])) {
-      results[[i]] = sqlExecute(channel, query, data[i, ], fetch, errors, rows_at_time, FALSE, ...)
+      results[[i]] = sqlExecute(channel, query, data[i, , drop = FALSE], fetch, errors, rows_at_time, FALSE, ...)
     }
     return(do.call(rbind, results))
   }
@@ -140,6 +140,9 @@ sqlExecute = function(
       data[, k] = levels(data[, k])[data[, k]]
     }
     if (is.logical(data[, k])) {
+      data[, k] = as.character(data[, k])
+    }
+    if (inherits(data[, k], c('Date', 'POSIXct', 'POSIXlt'))) {
       data[, k] = as.character(data[, k])
     }
   }
