@@ -1,4 +1,4 @@
 library(testthat)
 library(RODBCext)
 
-test_check("RODBCext")
+#test_check("RODBCext")
