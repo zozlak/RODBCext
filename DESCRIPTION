@@ -22,11 +22,7 @@ Suggests:
 LazyLoad: yes
 Biarch: yes
 License: GPL-2 | GPL-3
-Author: Mateusz Zoltak [aut, cre],
-    Brian Ripley [aut],
-    Michael Lapsley [aut],
-    Will Beasley [ctb]
 Maintainer: Mateusz Zoltak <zozlak@zozlak.org>
 NeedsCompilation: yes
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1
+RoxygenNote: 5.0.1
