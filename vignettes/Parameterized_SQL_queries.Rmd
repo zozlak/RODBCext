@@ -7,13 +7,12 @@ output:
     highlight: tango
     number_sections: yes
   pdf_document:
-    number_sections: yes
-  word_document:
     highlight: tango
+    number_sections: yes
 vignette: >
   %\VignetteIndexEntry{Parameterized SQL queries}
   %\VignetteEngine{knitr::rmarkdown}
-  \usepackage[utf8]{inputenc}
+  %\VignetteEncoding{UTF-8}
 ---
 
 The package [RODBCext](https://CRAN.R-project.org/package=RODBCext)

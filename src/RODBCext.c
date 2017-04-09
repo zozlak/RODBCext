@@ -19,12 +19,14 @@
 #include "RODBCext.h"
 
 /* macro to check and handle ODBC API calls results */
-#define SQL_RESULT_CHECK(res, handle, errorMessage, ret) \
-  if(res != SQL_SUCCESS && res != SQL_SUCCESS_WITH_INFO && res != SQL_NO_DATA){ \
+#define SQL_RESULT_CHECK(res, handle, errorMessage, ret)       \
+  if (res != SQL_SUCCESS && res != SQL_NO_DATA) {              \
     geterr(handle);                                            \
-    errlistAppend(handle, errorMessage);                       \
-    FreeHandleResources(handle);                               \
-    return ret;                                                \
+    if (res != SQL_SUCCESS_WITH_INFO) {                        \
+      errlistAppend(handle, errorMessage);                     \
+      FreeHandleResources(handle);                             \
+      return ret;                                              \
+    }                                                          \
   }
 
 /**
@@ -80,7 +82,7 @@ SQLRETURN BindStringParameter(pRODBCHandle thisHandle, SQLSMALLINT colNo){
     column->ColSize,
     column->DecimalDigits,
     column->pData,
-    0,
+    column->datalen,
     column->IndPtr
   );
     
@@ -139,11 +141,11 @@ SQLRETURN CopyParameters(pRODBCHandle thisHandle, SEXP data, int row){
         size_t len = strlen(cData);
         if(len > column->datalen){
           if(column->ColSize == 0){
-            column->datalen = len + 1;
+            column->datalen = len;
             res = BindStringParameter(thisHandle, col);
             SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLBindParameter failed"), res);
           }else{
-            warning(_("Value truncated to database columns size (%d)"), column->ColSize);
+            warning(_("[RODBCext] Value truncated to database columns size (%d)"), column->ColSize);
             len = column->ColSize;
           }
         }
@@ -306,8 +308,7 @@ SEXP RODBCPrepare(SEXP chan, SEXP query)
   SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLAllocStmt failed"), ScalarInteger(-1));
   
   cquery = translateChar(STRING_ELT(query, 0));
-  res = SQLPrepare(thisHandle->hStmt, (SQLCHAR *) cquery,
-          strlen(cquery) );
+  res = SQLPrepare(thisHandle->hStmt, (SQLCHAR *) cquery, strlen(cquery) );
   SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLPrepare failed"), ScalarInteger(-1));
   
   return ScalarInteger(1);
@@ -389,15 +390,14 @@ SEXP RODBCGetQueryTimeout(SEXP chan)
   SQLRETURN res = 0;
   SQLUINTEGER	value;		// Unsigned int attribute values
   
-  if(thisHandle->hStmt == NULL)
-    error(_("[RODBCext] Error: 'GetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
-    
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlgetstmtattr-function
-  res = SQLGetStmtAttr(thisHandle->hStmt,
-                       SQL_ATTR_QUERY_TIMEOUT,
-                       (SQLPOINTER) &value,
-                       (SQLINTEGER) sizeof(value),
-                       NULL);
+  res = SQLGetStmtAttr(
+    thisHandle->hStmt,
+    SQL_ATTR_QUERY_TIMEOUT,
+    (SQLPOINTER) &value,
+    (SQLINTEGER) sizeof(value),
+    NULL
+  );
   
   SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: GetQueryTimeout failed"), ScalarInteger(-1));
   
@@ -420,21 +420,12 @@ SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
 {
   pRODBCHandle thisHandle = R_ExternalPtrAddr(chan);
   SQLRETURN res = 0;
-
-  if(!isReal(timeout) && !(IS_INTEGER(timeout))) 
-    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter has no integer or floating point number value)! It is: %s"), type2char(TYPEOF(timeout)));
-  
-  if(LENGTH(timeout) != 1)
-    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter is not a single value!). Length: %i"), LENGTH(timeout));
-
-  if(asInteger(timeout) == NA_INTEGER)
-    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the timeout parameter is NA!)"));
-  
-  if(thisHandle->hStmt == NULL)
-    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
-
   int iTimeout =  asInteger(timeout);
-
+  
+  if(thisHandle->hStmt == NULL) {
+    error(_("[RODBCext] Error: 'SetQueryTimeout' failed (the statement handle is NULL). Make sure you call 'sqlPrepare' first!"));
+  }
+    
   // Note: The 3rd parameter ("ValuePtr") may be an integer as well as
   //       a pointer to buffers depending on the context of the call
   //       (passed as 2nd "Attribute" parameter).
@@ -442,10 +433,12 @@ SEXP RODBCSetQueryTimeout(SEXP chan, SEXP timeout)
   //       if pointers and integers do NOT have the same length as in 64-bit Windows.
   //       You can safely ignore this warning.
   // https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlsetstmtattr-function
-  res = SQLSetStmtAttr(thisHandle->hStmt,
-                       SQL_ATTR_QUERY_TIMEOUT,
-                       (SQLPOINTER) (unsigned long) iTimeout,
-                       0);
+  res = SQLSetStmtAttr(
+    thisHandle->hStmt,
+    SQL_ATTR_QUERY_TIMEOUT,
+    (SQLPOINTER) (unsigned long) iTimeout,
+    0
+  );
 
   SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SetQueryTimeout failed"), ScalarInteger(-1));
   

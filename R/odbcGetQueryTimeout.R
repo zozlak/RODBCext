@@ -13,7 +13,7 @@
 #  A copy of the GNU General Public License is available at
 #  http://www.r-project.org/Licenses/
 
-#' @tilte Gets the current query timeout of a prepared query
+#' @title Gets the current query timeout of a prepared query
 #' @description A query has to be already prepared using SQLPrepare()
 #' 
 #' Throws an error if an error occured
@@ -40,42 +40,6 @@ odbcGetQueryTimeout = function(channel)
   if (stat == -1L) {
     stop(paste0(RODBC::odbcGetErrMsg(channel), collapse = '\n'))
   } else {
-    return(stat)
-  }
-}
-
-#' @title Sets the query timeout of a prepared query
-#' @description A query has to be already prepared using SQLPrepare()
-#' 
-#' Throws an error if any error occured
-#' @param channel an open RODBC channel (connection)
-#' @param timeout the new query timeout value in seconds (0 means "no timeout")
-#' @return  0 = success, 1 = success but with an info message,
-#' @seealso \code{\link{odbcGetQueryTimeout}}, \code{\link{odbcConnect}},
-#'   \code{\link{odbcDriverConnect}}
-#' @note Not all drivers will support a query timeout. You may get an error then
-#'   or the query timeout values remains unchanged silently.
-#' @examples
-#' \dontrun{
-#'   conn = odbcConnect('MyDataSource')
-#'   
-#'   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
-#'   odbcSetQueryTimeout(conn, 120)   # sets the query timeout of the prepared statement
-#'   sqlExecute(conn, 'myValue')
-#'   sqlFetchMore(conn)
-#' }
-#' 
-#' @export
-odbcSetQueryTimeout <- function(channel, timeout = 30)
-{
-  stopifnot(odbcValidChannel(channel))
-  
-  stat = .Call("RODBCSetQueryTimeout", attr(channel, "handle_ptr"), timeout)
-
-  if (stat == -1L) {
-    stop(paste0(RODBC::odbcGetErrMsg(channel), collapse = '\n'))
-  }
-  else {
     return(stat)
   }
 }

@@ -14,5 +14,6 @@
  *  A copy of the GNU General Public License is available at
  *  http://www.r-project.org/Licenses/
  */
-#define DEFAULT_BUFF_SIZE 65535
+#define DEFAULT_BUFF_SIZE 65536
+#define MAX_BUFF_SIZE 16776960
 #define ODBC_ERROR_OUT_OF_MEM 21

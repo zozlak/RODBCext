@@ -41,8 +41,7 @@ sqlPrepare = function(channel, query, errors = TRUE, query_timeout = NULL)
 {
   stopifnot(
     odbcValidChannel(channel),
-    is.vector(query), is.character(query), length(query) == 1, all(!is.na(query)),
-    is.vector(query_timeout) & is.numeric(query_timeout) & length(query_timeout) == 1 & all(!is.na(query_timeout)) | is.na(query_timeout)
+    is.vector(query), is.character(query), length(query) == 1, all(!is.na(query))
   )
 
   enc = attr(channel, "encoding")

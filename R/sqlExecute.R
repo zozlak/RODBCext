@@ -95,8 +95,7 @@ sqlExecute = function(
     is.vector(fetch), is.logical(fetch), length(fetch) == 1, all(!is.na(fetch)),
     is.vector(errors), is.logical(errors), length(errors) == 1, all(!is.na(errors)),
     is.vector(rows_at_time), is.numeric(rows_at_time), length(rows_at_time) == 1, all(!is.na(rows_at_time)),
-    is.vector(force_loop), is.logical(force_loop), length(force_loop) == 1, all(!is.na(force_loop)),
-    is.vector(query_timeout) & is.numeric(query_timeout) & length(query_timeout) == 1 & all(!is.na(query_timeout)) | is.na(query_timeout)
+    is.vector(force_loop), is.logical(force_loop), length(force_loop) == 1, all(!is.na(force_loop))
   )
 
   # workaround for queries which have to be planned before each execution
@@ -108,7 +107,7 @@ sqlExecute = function(
     )
     results = list()
     for (i in seq_along(data[, 1])) {
-      results[[i]] = sqlExecute(channel, query, data[i, , drop = FALSE], fetch, errors, rows_at_time, FALSE, ...)
+      results[[i]] = sqlExecute(channel, query, data[i, , drop = FALSE], fetch, errors, rows_at_time, FALSE, query_timeout = query_timeout, ...)
     }
     return(do.call(rbind, results))
   }

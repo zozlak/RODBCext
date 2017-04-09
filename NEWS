@@ -1,3 +1,18 @@
+
+Changes in RODBCext 0.3.0 (2017-04-09)
+
+  * R dates ("Date", "POSIXlt" and "POSIXct" classes) are now handled 
+    automatically. It is no longer needed to manually cast them to character
+    vectors.
+  * It is now possible to set query execution timeout.
+    * sqlPrepare() and sqlExecute() function support additional query_timeout
+      paramete
+    * odbcSetQueryTimeout() and odbcGetQueryTimeout() functions were added
+  * Support for reading long character columns improved.
+    * If the driver does not report column length, 65535 characters are read.
+    * If the driver reports extremaly large column length (more then 16M),
+      16M characters are read.
+
 Changes in RODBCext 0.2.7 (2016-09-17)
 
   * Added support for column types reporting 0 as its length (most notably

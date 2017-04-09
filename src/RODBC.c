@@ -126,7 +126,7 @@ void geterr(pRODBCHandle thisHandle)
     if(retval != SQL_SUCCESS && retval != SQL_SUCCESS_WITH_INFO)
       break;
     sprintf(message,"%s %d %s", sqlstate, (int)NativeError, msg);
-warning(message);
+    warning(message);
     errlistAppend(thisHandle, message);
   }
 }
@@ -254,7 +254,7 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
       goto error;
     }
     
-    column->datalen = column->ColSize ? column->ColSize : DEFAULT_BUFF_SIZE;
+    column->datalen = column->ColSize ? column->ColSize + 1 : DEFAULT_BUFF_SIZE;
     
     /* now bind the col to its data buffer */
     /* MSDN say the BufferLength is ignored for fixed-size
@@ -287,12 +287,15 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
       default:
       {
         SQLLEN datalen = thisHandle->ColData[i].ColSize;
-        if (datalen <= 0 || datalen < COLMAX) datalen = COLMAX;
-        /* sanity check as the reports are sometimes unreliable */
-        if (datalen > 65535) datalen = 65535;
+        if (datalen <= 0) {
+          datalen = DEFAULT_BUFF_SIZE - 1;
+        }
+        if (datalen > MAX_BUFF_SIZE) {
+          datalen = MAX_BUFF_SIZE - 1;
+        }
         thisHandle->ColData[i].pData = Calloc(nRows * (datalen + 1), char);
-        thisHandle->ColData[i].datalen = datalen;
-        BIND(SQL_C_CHAR, pData, datalen);
+        thisHandle->ColData[i].datalen = datalen + 1;
+        BIND(SQL_C_CHAR, pData, datalen + 1);
       }
     }
 
