@@ -14,7 +14,7 @@
 #  A copy of the GNU General Public License is available at
 #  http://www.r-project.org/Licenses/
 
-odbcValidChannel <- function(channel)
+odbcValidChannel = function(channel)
 {
   return(
     inherits(channel, "RODBC") && 

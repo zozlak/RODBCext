@@ -78,114 +78,122 @@
 #'   # execute a simple statement without parameters using a query timeout value
 #'   sqlExecute(con, "SELECT * FROM myTable", fetch = TRUE, query_timeout = 60)
 #' }
-sqlExecute <- function(channel, query=NULL, data=NULL, fetch=FALSE, errors=TRUE, rows_at_time=attr(channel, "rows_at_time"), force_loop=FALSE, query_timeout=NULL, ...)
-{
+sqlExecute = function(
+  channel, 
+  query = NULL, 
+  data = NULL, 
+  fetch = FALSE, 
+  errors = TRUE, 
+  rows_at_time = attr(channel, "rows_at_time"), 
+  force_loop = FALSE, 
+  query_timeout = NULL, 
+  ...
+) {
   # Check preconditions
   stopifnot(
     odbcValidChannel(channel),
     is.vector(fetch), is.logical(fetch), length(fetch) == 1, all(!is.na(fetch)),
     is.vector(errors), is.logical(errors), length(errors) == 1, all(!is.na(errors)),
     is.vector(rows_at_time), is.numeric(rows_at_time), length(rows_at_time) == 1, all(!is.na(rows_at_time)),
-    is.vector(force_loop), is.logical(force_loop), length(force_loop) == 1, all(!is.na(force_loop))
+    is.vector(force_loop), is.logical(force_loop), length(force_loop) == 1, all(!is.na(force_loop)),
+    is.vector(query_timeout) & is.numeric(query_timeout) & length(query_timeout) == 1 & all(!is.na(query_timeout)) | is.na(query_timeout)
   )
 
-  if(!is.null(query_timeout)){
-    stopifnot(is.numeric(query_timeout), length(query_timeout) == 1)
-  }
-  
-  if(!odbcValidChannel(channel)){
-    stop("first argument is not an open RODBC channel")
-  }
-  
   # workaround for queries which have to be planned before each execution
-  if(force_loop){
-    data = as.data.frame(data)
+  if (force_loop) {
+    data = as.data.frame(data, stringsAsFactors = FALSE)
     stopifnot(
       is.vector(query), is.character(query), length(query) == 1, all(!is.na(query)),
       nrow(data) > 0
     )
     results = list()
-    for(i in seq_along(data[, 1])){
+    for (i in seq_along(data[, 1])) {
       results[[i]] = sqlExecute(channel, query, data[i, ], fetch, errors, rows_at_time, FALSE, ...)
     }
     return(do.call(rbind, results))
   }
   
   # Prepare query (if provided)
-  if(!is.null(query)){
-    stat <- sqlPrepare(channel, query, errors)
-    if(stat == -1L){
+  if (!is.null(query)) {
+    stat = sqlPrepare(channel, query, errors)
+    if (stat == -1L) {
       return(stat)   # there is no need to check if error should be thrown - this is being done by sqlPrepare()
     }
   }
 
   # Set the query timeout
-  if(!is.null(query_timeout))
-    odbcSetQueryTimeout(channel, query_timeout)
-    
+  if (!is.null(query_timeout)) {
+    if (!errors) {
+      tryCatch(
+        odbcSetQueryTimeout(channel, query_timeout),
+        error = return
+      )
+    } else {
+      odbcSetQueryTimeout(channel, query_timeout)
+    }
+  }
+  
   # Prepare data
-  data = as.data.frame(data)
-  for(k in seq_along(data)){
-    if(is.factor(data[, k])){
+  data = as.data.frame(data, stringsAsFactors = FALSE)
+  for (k in seq_along(data)) {
+    if (is.factor(data[, k])) {
       data[, k] = levels(data[, k])[data[, k]]
     }
-    if(is.logical(data[, k])){
+    if (is.logical(data[, k])) {
       data[, k] = as.character(data[, k])
     }
   }
   
   # If there is no need to fetch results or no query parameters were provided,
   # call RODBCExecute once on whole data
-  if(fetch == FALSE | nrow(data) < 1){
-    stat <- .Call(
+  if (fetch == FALSE | nrow(data) < 1) {
+    stat = .Call(
       "RODBCExecute", 
       attr(channel, "handle_ptr"), 
       data, 
       as.integer(rows_at_time)
     )
-    if(stat == -1L) {
-      if(errors){
-        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
-      }
-      else{
+    if (stat == -1L) {
+      if (errors) {
+        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse = '\n'))
+      } else {
         return(stat)
       }
     }
     
-    if(fetch == FALSE){
+    if (fetch == FALSE) {
       return(invisible(stat))
     }
     
     # Fetch results
-    return(RODBC::sqlGetResults(channel, errors=errors, ...))
+    return(RODBC::sqlGetResults(channel, errors = errors, ...))
   }
   
   # If results should be fetched and query parameters were provided
 
   # For each row of query parameters execute the query and fetch results
   results = NULL
-  for(row in seq_len(nrow(data))){
-    stat <- .Call(
+  for (row in seq_len(nrow(data))) {
+    stat = .Call(
       "RODBCExecute", 
       attr(channel, "handle_ptr"), 
       as.list(data[row, ]), 
       as.integer(rows_at_time)
     )
-    if(stat == -1L) {
-      if(errors){
-        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse='\n'))
-      }
-      else{
+    if (stat == -1L) {
+      if (errors) {
+        stop(paste0(RODBC::odbcGetErrMsg(channel), collapse = '\n'))
+      } else {
         return(stat)
       }
     }      
     
-    stat <- RODBC::sqlGetResults(channel, errors=errors, ...)
+    stat = RODBC::sqlGetResults(channel, errors = errors, ...)
     
-    if(is.null(results)){
-      results <- as.data.frame(stat)
-    }else{
-      results <- rbind(results, as.data.frame(stat))
+    if (is.null(results)) {
+      results = as.data.frame(stat)
+    } else {
+      results = rbind(results, as.data.frame(stat))
     }
   }
   return(results)

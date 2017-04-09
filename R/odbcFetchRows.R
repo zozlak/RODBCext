@@ -24,16 +24,15 @@
 #' @param ... other parametrs passed to \link[RODBC]{odbcFetchRows}
 #' @return see \link[RODBC]{odbcFetchRows}
 #' @export
-odbcFetchRows <- function(channel, ...)
+odbcFetchRows = function(channel, ...)
 {
-  if(!odbcValidChannel(channel)){
-    stop("first argument is not an open RODBC channel")
-  }
-  res <- .Call("RODBCQueryStatus", attr(channel, "handle_ptr"))
+  stopifnot(odbcValidChannel(channel))
   
-  if(res == -1){
+  res = .Call("RODBCQueryStatus", attr(channel, "handle_ptr"))
+  
+  if (res == -1) {
     stop('an error occured')
-  }else if(res == 0){
+  } else if(res == 0) {
     stop('query is prepared but not executed, you must execute it first')
   }
 

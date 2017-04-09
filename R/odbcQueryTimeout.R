@@ -13,20 +13,14 @@
 #  A copy of the GNU General Public License is available at
 #  http://www.r-project.org/Licenses/
 
-
-
-#' Get the current query timeout of a prepared query
-#'
-#' A query has to be already prepared using SQLPrepare()
-#'
+#' @tilte Gets the current query timeout of a prepared query
+#' @description A query has to be already prepared using SQLPrepare()
+#' 
+#' Throws an error if an error occured
 #' @param channel an RODBC channel containing an open connection
-#'
 #' @return The current query timeout value in seconds. 0 means "no timeout"
-#' 
-#' @description Throws any error if an error occured
-#' 
-#' @seealso \code{\link{odbcSetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}
-#' 
+#' @seealso \code{\link{odbcSetQueryTimeout}}, \code{\link{odbcConnect}},
+#'   \code{\link{odbcDriverConnect}}
 #' @examples
 #' \dontrun{
 #'   conn = odbcConnect('MyDataSource')
@@ -36,43 +30,31 @@
 #'   sqlExecute(conn, 'myValue')
 #'   sqlFetchMore(conn)
 #' }
-#' 
 #' @export
-odbcGetQueryTimeout <- function(channel)
+odbcGetQueryTimeout = function(channel)
 {
-  if (!odbcValidChannel(channel))
-    stop("first argument is not an open RODBC channel")
-  
-  stat <- .Call("RODBCGetQueryTimeout", attr(channel, "handle_ptr"))
+  stopifnot(odbcValidChannel(channel))
+
+  stat = .Call("RODBCGetQueryTimeout", attr(channel, "handle_ptr"))
   
   if (stat == -1L) {
     stop(paste0(RODBC::odbcGetErrMsg(channel), collapse = '\n'))
-  }
-  else {
+  } else {
     return(stat)
   }
-    
 }
 
-
-
-#' Sets the query timeout of a prepared query
-#'
-#' A query has to be already prepared using SQLPrepare()
-#'
+#' @title Sets the query timeout of a prepared query
+#' @description A query has to be already prepared using SQLPrepare()
+#' 
+#' Throws an error if any error occured
 #' @param channel an open RODBC channel (connection)
 #' @param timeout the new query timeout value in seconds (0 means "no timeout")
-#'
-#' @return  0 = success,
-#'          1 = success but with an info message,
-#'
-#' @seealso \code{\link{odbcGetQueryTimeout}}, \code{\link{odbcConnect}}, \code{\link{odbcDriverConnect}}
-#'
-#' @description Throws an error if any error occured
-#' 
+#' @return  0 = success, 1 = success but with an info message,
+#' @seealso \code{\link{odbcGetQueryTimeout}}, \code{\link{odbcConnect}},
+#'   \code{\link{odbcDriverConnect}}
 #' @note Not all drivers will support a query timeout. You may get an error then
-#'       or the query timeout values remains unchanged silently.
-#' 
+#'   or the query timeout values remains unchanged silently.
 #' @examples
 #' \dontrun{
 #'   conn = odbcConnect('MyDataSource')
@@ -86,10 +68,9 @@ odbcGetQueryTimeout <- function(channel)
 #' @export
 odbcSetQueryTimeout <- function(channel, timeout = 30)
 {
-  if (!odbcValidChannel(channel))
-    stop("first argument is not an open RODBC channel")
+  stopifnot(odbcValidChannel(channel))
   
-  stat <- .Call("RODBCSetQueryTimeout", attr(channel, "handle_ptr"), timeout)
+  stat = .Call("RODBCSetQueryTimeout", attr(channel, "handle_ptr"), timeout)
 
   if (stat == -1L) {
     stop(paste0(RODBC::odbcGetErrMsg(channel), collapse = '\n'))
@@ -97,5 +78,4 @@ odbcSetQueryTimeout <- function(channel, timeout = 30)
   else {
     return(stat)
   }
-  
 }
