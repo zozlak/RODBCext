@@ -128,7 +128,7 @@ for(row in seq_len(nrow(newStudents))){
        '", newStudents$last_name[row],"', 
      )"
   )
-  sqlQuery(P, query)
+  sqlQuery(connHandle, query)
 }
 
 odbcClose(connHandle)
