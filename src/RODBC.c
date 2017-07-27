@@ -290,6 +290,9 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
         if (datalen <= 0) {
           datalen = DEFAULT_BUFF_SIZE - 1;
         }
+        if (datalen < COLMAX) {
+          datalen = COLMAX;
+        }
         if (datalen > MAX_BUFF_SIZE) {
           datalen = MAX_BUFF_SIZE - 1;
         }
