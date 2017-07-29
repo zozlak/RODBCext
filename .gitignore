@@ -4,9 +4,12 @@ src/*.so
 src/*.dll
 src/Makevars
 src/config.h
+src-*
 build/*
 .Rproj.user
 .Rhistory
 config.log
 config.status
 revdep
+vignettes/*.R
+vignettes/*.html

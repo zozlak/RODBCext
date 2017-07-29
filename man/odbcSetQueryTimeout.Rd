@@ -38,4 +38,3 @@ Not all drivers will support a query timeout. You may get an error then
 \code{\link{odbcGetQueryTimeout}}, \code{\link{odbcConnect}},
   \code{\link{odbcDriverConnect}}
 }
-
