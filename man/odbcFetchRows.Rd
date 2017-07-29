@@ -19,4 +19,3 @@ RODBC::odbcFetchRows crashes if the ODBC channel is in "query prepared
 but already not executed" state.
 This function is a small overlay emmitting an error in such a case.
 }
-

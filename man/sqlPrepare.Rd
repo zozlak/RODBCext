@@ -35,4 +35,3 @@ Prepares a query for execution.
   sqlExecute(conn, data='myValue', fetch=TRUE)
 }
 }
-

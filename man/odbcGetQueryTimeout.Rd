@@ -31,4 +31,3 @@ Throws an error if an error occured
 \code{\link{odbcSetQueryTimeout}}, \code{\link{odbcConnect}},
   \code{\link{odbcDriverConnect}}
 }
-

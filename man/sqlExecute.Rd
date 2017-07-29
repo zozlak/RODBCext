@@ -84,4 +84,3 @@ Return value depends on the combination of parameters:
   sqlExecute(con, "SELECT * FROM myTable", fetch = TRUE, query_timeout = 60)
 }
 }
-
