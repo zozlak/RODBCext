@@ -140,12 +140,12 @@ SQLRETURN CopyParameters(pRODBCHandle thisHandle, SEXP data, int row){
         cData = translateChar(STRING_ELT(VECTOR_ELT(data, col), row));
         size_t len = strlen(cData);
         if(len > column->datalen){
-          if(column->ColSize == 0){
+          if(len < column->ColSize || column->ColSize == 0){
             column->datalen = len;
             res = BindStringParameter(thisHandle, col);
             SQL_RESULT_CHECK(res, thisHandle, _("[RODBCext] Error: SQLBindParameter failed"), res);
           }else{
-            warning(_("[RODBCext] Value truncated to database columns size (%d)"), column->ColSize);
+            warning(_("[RODBCext] Value of length %d truncated to database columns size (%d)"), len, column->ColSize);
             len = column->ColSize;
           }
         }
@@ -244,7 +244,14 @@ SQLRETURN BindParameters(pRODBCHandle thisHandle, SEXP data){
         );
         break;
       default:
-        column->datalen = column->ColSize ? column->ColSize : DEFAULT_BUFF_SIZE;
+        /* initialize data buffer to some sane size
+         * if bigger buffer will be needed, it will be extended automatically
+         * by the CopyParameters() function
+         */
+        column->datalen = column->ColSize;
+        if (column->datalen == 0 || column->datalen >= DEFAULT_BUFF_SIZE) {
+          column->datalen = DEFAULT_BUFF_SIZE - 1;
+        }
         res = BindStringParameter(thisHandle, col);
         break;
     }

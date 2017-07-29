@@ -254,8 +254,6 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
       goto error;
     }
     
-    column->datalen = column->ColSize ? column->ColSize + 1 : DEFAULT_BUFF_SIZE;
-    
     /* now bind the col to its data buffer */
     /* MSDN say the BufferLength is ignored for fixed-size
        types, but this is not so for UnixODBC */
@@ -280,6 +278,12 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
       {
         /* should really use SQLCHAR (unsigned) */
         SQLLEN datalen = thisHandle->ColData[i].ColSize;
+        if (datalen <= 0) {
+          datalen = DEFAULT_BUFF_SIZE - 1;
+        }
+        if (datalen > MAX_BUFF_SIZE) {
+          datalen = MAX_BUFF_SIZE - 1;
+        }
         thisHandle->ColData[i].datalen = datalen;
         thisHandle->ColData[i].pData = Calloc(nRows * (datalen + 1), char);
         BIND(SQL_C_BINARY, pData, datalen);
@@ -290,6 +294,10 @@ int cachenbind(pRODBCHandle thisHandle, int nRows)
         if (datalen <= 0) {
           datalen = DEFAULT_BUFF_SIZE - 1;
         }
+        /* a little ugly workaround for Oracle - see https://github.com/zozlak/RODBCext/issues/17 */
+        if (thisHandle->ColData[i].DataType == SQL_TYPE_TIMESTAMP && datalen < 26) {
+          datalen = 26;
+        }        
         if (datalen > MAX_BUFF_SIZE) {
           datalen = MAX_BUFF_SIZE - 1;
         }

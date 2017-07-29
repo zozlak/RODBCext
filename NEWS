@@ -1,3 +1,14 @@
+Changes in RODBCext 0.3.1 (2017-07-29)
+
+  * Added workaround for Oracle's timestamp(n) data type.
+    (the problem is that the driver can return data longer then reported
+    column length)
+    (https://github.com/zozlak/RODBCext/issues/17)
+  * Support for writing long character columns improved.
+    If column length is bigger then 65535, the data buffer is initially set
+    to 65535 bytes and extended only when bigger data value is encountered.
+  * Oracle Express database added to tests.
+    (they now cover Postgresql, Ms SQL Server, MariaDb and Oracle)
 
 Changes in RODBCext 0.3.0 (2017-04-09)
 
