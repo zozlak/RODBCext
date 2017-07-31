@@ -1,9 +1,9 @@
 ## Test environments
 
-* local Linux install, x64, R 3.3.2
-* local Windows install, x64, R 3.3.3
-* travis.ci Linux, x64, R 3.3.3
-* travis.ci Linux, x64, R 3.4.0 beta (r72499)
+* local Linux install, x64, R 3.4.1
+* local Windows install, x64, R 3.4.1
+* travis.ci Linux, x64, R 3.4.1
+* travis.ci Linux, x64, R 3.5.0 unstable (r72992)
 * devtools win-builder, R 3.4.0 beta (r72499)
 
 ## R CMD check results
