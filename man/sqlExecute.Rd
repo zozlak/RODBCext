@@ -33,7 +33,7 @@ invalidates its plan, e.g. EXEC queries on Ms SQL Server)}
 \item{...}{parameters to pass to \link[RODBC]{sqlGetResults} (if fetch=TRUE)}
 }
 \value{
-see datails
+see details
 }
 \description{
 Executes a parameterized query. 
@@ -56,7 +56,7 @@ Return value depends on the combination of parameters:
 \dontrun{
   conn = odbcConnect('MyDataSource')
   
-  # prepare, execute and fetch results separatly
+  # prepare, execute and fetch results separately
   sqlPrepare(conn, "SELECT * FROM myTable WHERE column = ?")
   sqlExecute(conn, NULL, 'myValue')
   sqlGetResults(conn)
@@ -68,13 +68,21 @@ Return value depends on the combination of parameters:
   # prepare, execute and fetch at one time
   sqlExecute(conn, "SELECT * FROM myTable WHERE column = ?", 'myValue', TRUE)
   
+  # prepare, execute and fetch at one time using multiple wildcards for data passthrough
+  sqlExecute(
+  conn, 
+  query="SELECT * FROM table WHERE column1 = ? AND column2 = ?", 
+  data=data.frame('column1value', 'column2value'), 
+  fetch=TRUE
+  )
+  
   # prepare, execute and fetch at one time, pass additional parameters to sqlFetch()
   sqlExecute(
     conn, 
     "SELECT * FROM myTable WHERE column = ?", 
     'myValue', 
-    TRUE, 
-    stringsAsFactors=FALSE
+    fetch = TRUE, 
+    stringsAsFactors = FALSE
   )
   
   # prepare, execute and fetch at one time using a query timeout value
