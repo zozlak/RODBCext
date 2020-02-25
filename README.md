@@ -10,6 +10,47 @@ See [XKCD - Exploits of a Mom](http://xkcd.com/327/)
 
 Morover parametrized queries speed up query execution if it is repeated many times (because query planning is done only once).
 
+## Deprecation info
+
+As of 2020 there is a better alternative to this package - the [odbc](https://cran.r-project.org/web/packages/odbc/index.html) one. The odbc package not only supports parameterized queries but is also:
+
+* DBI-compliant (uses same uniform API as most R RDBMS connectivity packages)
+* often faster
+* should be better maintained
+
+If you are going to develop a new code, please simply start with the odbc package.
+
+If you want to port your code, it shouldn't be difficult - see an example below.
+
+### Porting example
+
+```r
+# RODBCext
+library(RODBCext)
+# odbc
+library(DBI)
+library(odbc)
+
+# RODBC
+conn = odbcConnect("MyODBCSource")
+# odbc
+conn = dbConnect(odbc(), "MyODBCSource")
+
+# RODBC
+sqlExecute(
+  conn, 
+  query = "SELECT * FROM table WHERE column1 = ? AND column2 = ?", 
+  data = data.frame('column1value', 'column2value'), 
+  fetch = TRUE
+)
+# odbc
+dbGetQuery(
+  conn,
+  "SELECT * FROM table WHERE column1 = ? AND column2 = ?",
+  param =  list('column1value', 'column2value')
+)
+```
+
 ## Installation
 
 ### From CRAN
